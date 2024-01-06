@@ -23,8 +23,29 @@ impl Default for PhysicalObj {
     }
 }
 
+// 等速直線運動
+#[derive(Component)]
+pub struct UniformVelocity(pub Vec2);
+
+#[derive(Bundle)]
+pub struct UniformVelocityBundle {
+    pub velocity: UniformVelocity,
+    pub physicalobj: PhysicalObj,
+}
+impl Default for UniformVelocityBundle {
+    fn default() -> Self {
+        Self {
+            velocity: UniformVelocity(Vec2::new(0., 0.)),
+            physicalobj: Default::default(),
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Component)]
+pub struct FromPlayer;
 
 #[derive(Component)]
 pub struct Enemy;

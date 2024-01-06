@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use components::{GameSystemSet, PhysicalObj};
+use components::{GameSystemSet, PhysicalObj, UniformVelocity};
 use player::PlayerPlugin;
 
 mod components;
@@ -37,6 +37,10 @@ fn main() {
         )
         .add_systems(
             Update,
+            uniform_linear_motion_system.in_set(GameSystemSet::Update),
+        )
+        .add_systems(
+            Update,
             physical_obj_do_verlet_system.in_set(GameSystemSet::UpdatePhysics),
         )
         .run();
@@ -57,5 +61,15 @@ fn physical_obj_do_verlet_system(mut query: Query<(&PhysicalObj, &mut Transform)
     for (obj, mut transform) in query.iter_mut() {
         let translation = &mut transform.translation;
         *translation += obj.move_vec.extend(0.);
+    }
+}
+
+// 等速直線運動,bullet等
+fn uniform_linear_motion_system(
+    time: Res<Time>,
+    mut query: Query<(&UniformVelocity, &mut PhysicalObj)>,
+) {
+    for (v, mut obj) in query.iter_mut() {
+        obj.move_vec = v.0 * time.delta_seconds();
     }
 }
