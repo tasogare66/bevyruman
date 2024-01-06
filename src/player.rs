@@ -1,4 +1,4 @@
-use crate::components::{PhysicalObj, Player};
+use crate::components::{GameSystemSet, PhysicalObj, Player};
 use bevy::prelude::*;
 
 #[derive(Resource)]
@@ -16,8 +16,14 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerState::default())
-            .add_systems(Update, player_spawn_system)
-            .add_systems(Update, player_keyboard_event_system);
+            .add_systems(
+                Update,
+                player_keyboard_event_system.in_set(GameSystemSet::Update),
+            )
+            .add_systems(
+                Update,
+                player_spawn_system.in_set(GameSystemSet::PostUpdate),
+            );
     }
 }
 
@@ -57,9 +63,9 @@ fn player_keyboard_event_system(
             0.
         };
         mov.y = if kb.pressed(KeyCode::Up) {
-            -1.
-        } else if kb.pressed(KeyCode::Down) {
             1.
+        } else if kb.pressed(KeyCode::Down) {
+            -1.
         } else {
             0.
         };

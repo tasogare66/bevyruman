@@ -1,6 +1,14 @@
 use bevy::math::Vec2;
 use bevy::prelude::*;
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum GameSystemSet {
+    PreProcess,
+    Update,
+    UpdatePhysics,
+    PostUpdate,
+}
+
 #[derive(Component)]
 pub struct PhysicalObj {
     pub old_pos: Vec2,

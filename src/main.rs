@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use components::{GameSystemSet, PhysicalObj};
 use player::PlayerPlugin;
 
 mod components;
@@ -19,12 +20,42 @@ fn main() {
             }),
             ..Default::default()
         }))
+        .configure_sets(
+            Update,
+            (
+                GameSystemSet::Update.after(GameSystemSet::PreProcess),
+                GameSystemSet::UpdatePhysics.after(GameSystemSet::Update),
+                GameSystemSet::PostUpdate.after(GameSystemSet::UpdatePhysics),
+            ),
+        )
         .add_plugins(PlayerPlugin)
         .add_systems(Startup, setup_system)
+        .add_systems(Update, bevy::window::close_on_esc)
+        .add_systems(
+            Update,
+            physical_obj_pre_proc_system.in_set(GameSystemSet::PreProcess),
+        )
+        .add_systems(
+            Update,
+            physical_obj_do_verlet_system.in_set(GameSystemSet::UpdatePhysics),
+        )
         .run();
 }
 
 fn setup_system(mut commands: Commands) {
     // camera
     commands.spawn(Camera2dBundle::default());
+}
+
+fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {
+    for mut obj in query.iter_mut() {
+        obj.move_vec = Vec2::ZERO;
+    }
+}
+
+fn physical_obj_do_verlet_system(mut query: Query<(&PhysicalObj, &mut Transform)>) {
+    for (obj, mut transform) in query.iter_mut() {
+        let translation = &mut transform.translation;
+        *translation += obj.move_vec.extend(0.);
+    }
 }
