@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use components::{GameSystemSet, PhysicalObj, UniformVelocity};
+use components::{GameSystemSet, Lifetime, PhysicalObj, UniformVelocity};
 use player::PlayerPlugin;
 
 mod components;
@@ -33,7 +33,8 @@ fn main() {
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(
             Update,
-            physical_obj_pre_proc_system.in_set(GameSystemSet::PreProcess),
+            (physical_obj_pre_proc_system, update_lifetime_system)
+                .in_set(GameSystemSet::PreProcess),
         )
         .add_systems(
             Update,
@@ -71,5 +72,19 @@ fn uniform_linear_motion_system(
 ) {
     for (v, mut obj) in query.iter_mut() {
         obj.move_vec = v.0 * time.delta_seconds();
+    }
+}
+
+// 生存時間
+fn update_lifetime_system(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Lifetime)>,
+) {
+    for (entity, mut timer) in query.iter_mut() {
+        timer.0.tick(time.delta());
+        if timer.0.finished() {
+            commands.entity(entity).despawn();
+        }
     }
 }

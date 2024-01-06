@@ -96,6 +96,7 @@ fn player_input_event_system(
                         velocity: UniformVelocity(Vec2::new(0., 150.)),
                         ..default()
                     })
+                    .insert(Lifetime(Timer::from_seconds(1., TimerMode::Once)))
                     .insert(FromPlayer);
             };
             spawn_bullet(0.);

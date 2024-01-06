@@ -23,6 +23,9 @@ impl Default for PhysicalObj {
     }
 }
 
+#[derive(Component)]
+pub struct Lifetime(pub Timer);
+
 // 等速直線運動
 #[derive(Component)]
 pub struct UniformVelocity(pub Vec2);
