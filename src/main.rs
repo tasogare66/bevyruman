@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use components::{GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity};
+use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
 mod components;
+mod enemy;
 mod player;
 
 fn main() {
@@ -28,7 +30,7 @@ fn main() {
                 GameSystemSet::PostUpdate.after(GameSystemSet::UpdatePhysics),
             ),
         )
-        .add_plugins(PlayerPlugin)
+        .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(
