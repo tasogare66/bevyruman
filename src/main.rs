@@ -16,7 +16,7 @@ fn main() {
         )))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "bevyruma".into(),
+                title: "bevyruman".into(),
                 resolution: (1280f32, 720f32).into(),
                 ..Default::default()
             }),

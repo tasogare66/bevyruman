@@ -1,6 +1,7 @@
 use crate::components::*;
 use bevy::{prelude::*, time::common_conditions::on_timer};
-use std::time::Duration;
+use rand::Rng;
+use std::{f32::consts::PI, time::Duration};
 
 #[derive(Resource)]
 pub struct EnemyCount {
@@ -26,9 +27,28 @@ impl Plugin for EnemyPlugin {
     }
 }
 
-fn enemy_spawn_system(mut commands: Commands, mut enemy_count: ResMut<EnemyCount>) {
+fn random_circle_base(r0: f32, ed_r: f32, half_central_ang: f32) -> Vec2 {
+    let mut rng = rand::thread_rng();
+    let r = rng.gen_range(r0..1.).sqrt() * ed_r;
+    let theta = rng.gen_range(-half_central_ang..half_central_ang);
+    Vec2::new(r * theta.cos(), r * theta.sin())
+}
+
+fn random_circle(st_r: f32, ed_r: f32) -> Vec2 {
+    let r0 = st_r / ed_r;
+    random_circle_base(r0, ed_r, PI)
+}
+
+fn enemy_spawn_system(
+    mut commands: Commands,
+    mut enemy_count: ResMut<EnemyCount>,
+    q_player: Query<&Transform, With<Player>>,
+) {
+    let Ok(pl_tf) = q_player.get_single() else {
+        return;
+    };
     if enemy_count.count < enemy_count.max {
-        let pos = Vec2::ZERO;
+        let pos = random_circle(100., 200.) + pl_tf.translation.xy();
         commands
             .spawn(SpriteBundle {
                 sprite: Sprite {
