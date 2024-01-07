@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use components::{GameSystemSet, Lifetime, PhysicalObj, UniformVelocity};
+use components::{GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity};
 use player::PlayerPlugin;
 
 mod components;
@@ -49,7 +49,7 @@ fn main() {
 
 fn setup_system(mut commands: Commands) {
     // camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {

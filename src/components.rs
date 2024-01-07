@@ -9,6 +9,10 @@ pub enum GameSystemSet {
     PostUpdate,
 }
 
+/// Used to help identify our main camera
+#[derive(Component)]
+pub struct MainCamera;
+
 #[derive(Component)]
 pub struct PhysicalObj {
     pub old_pos: Vec2,
