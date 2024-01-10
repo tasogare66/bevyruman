@@ -34,6 +34,7 @@ impl Plugin for PlayerPlugin {
 
 fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerState>) {
     if !player_state.alive {
+        let player_pos = Vec2::new(0., 0.);
         commands
             .spawn(SpriteBundle {
                 sprite: Sprite {
@@ -42,13 +43,17 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
                     ..Default::default()
                 },
                 transform: Transform {
-                    translation: Vec3::new(0., 0., 10.),
+                    translation: player_pos.extend(10.),
                     ..Default::default()
                 },
                 ..default()
             })
             .insert(Player)
-            .insert(PhysicalObj { ..default() });
+            .insert(PhysicalObj {
+                old_pos: player_pos,
+                ..default()
+            })
+            .insert(CollideCircle { ..default() });
 
         player_state.alive = true; //spawned
     }
@@ -128,6 +133,7 @@ fn player_input_shot_event_system(
         let velocity = dir * 150.;
 
         let mut spawn_bullet = |offset: Vec2| {
+            let bullet_pos = pos + offset;
             commands
                 .spawn(SpriteBundle {
                     sprite: Sprite {
@@ -136,13 +142,17 @@ fn player_input_shot_event_system(
                         ..Default::default()
                     },
                     transform: Transform {
-                        translation: (pos + offset).extend(10.),
+                        translation: bullet_pos.extend(10.),
                         ..Default::default()
                     },
                     ..default()
                 })
                 .insert(UniformVelocityBundle {
                     velocity: UniformVelocity(velocity),
+                    physicalobj: PhysicalObj {
+                        old_pos: bullet_pos,
+                        ..default()
+                    },
                     ..default()
                 })
                 .insert(Lifetime(Timer::from_seconds(1., TimerMode::Once)))

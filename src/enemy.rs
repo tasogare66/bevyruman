@@ -65,7 +65,11 @@ fn enemy_spawn_system(
                 ..default()
             })
             .insert(Enemy)
-            .insert(PhysicalObj { ..default() });
+            .insert(PhysicalObj {
+                old_pos: pos,
+                ..default()
+            })
+            .insert(CollideCircle { ..default() });
 
         enemy_count.count += 1;
     }

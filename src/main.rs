@@ -1,11 +1,25 @@
 use bevy::prelude::*;
-use components::{GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity};
+use components::{
+    CollideCircle, GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
+};
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 
 mod components;
 mod enemy;
 mod player;
+
+#[derive(Resource)]
+struct PhysicsResource {
+    pub prev_dt: f32, //1frame前のdt
+}
+impl Default for PhysicsResource {
+    fn default() -> Self {
+        Self {
+            prev_dt: 1.0 / 60.0,
+        }
+    }
+}
 
 fn main() {
     App::new()
@@ -27,9 +41,11 @@ fn main() {
             (
                 GameSystemSet::Update.after(GameSystemSet::PreProcess),
                 GameSystemSet::UpdatePhysics.after(GameSystemSet::Update),
-                GameSystemSet::PostUpdate.after(GameSystemSet::UpdatePhysics),
+                GameSystemSet::PostPhysics.after(GameSystemSet::UpdatePhysics),
+                GameSystemSet::PostUpdate.after(GameSystemSet::PostPhysics),
             ),
         )
+        .insert_resource(PhysicsResource { ..default() })
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
@@ -44,7 +60,11 @@ fn main() {
         )
         .add_systems(
             Update,
-            physical_obj_do_verlet_system.in_set(GameSystemSet::UpdatePhysics),
+            collision_detection_system.in_set(GameSystemSet::UpdatePhysics),
+        )
+        .add_systems(
+            Update,
+            physical_obj_do_verlet_system.in_set(GameSystemSet::PostPhysics),
         )
         .run();
 }
@@ -57,14 +77,75 @@ fn setup_system(mut commands: Commands) {
 fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {
     for mut obj in query.iter_mut() {
         obj.move_vec = Vec2::ZERO;
+        obj.old_move_vec = Vec2::ZERO;
+        obj.force = Vec2::ZERO;
     }
 }
 
-fn physical_obj_do_verlet_system(mut query: Query<(&PhysicalObj, &mut Transform)>) {
-    for (obj, mut transform) in query.iter_mut() {
-        let translation = &mut transform.translation;
-        *translation += obj.move_vec.extend(0.);
+fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut PhysicalObj)>) {
+    let mut iter = query.iter_combinations_mut();
+    while let Some([(tf0, colli0, mut obj0), (tf1, colli1, mut obj1)]) = iter.fetch_next() {
+        let diff = tf1.translation.xy() - tf0.translation.xy();
+        let d = diff.length();
+        let target = colli0.radius + colli1.radius;
+        if d > 0. && d <= target {
+            // d==0: same particle
+            let inv_mass0 = obj0.inv_mass;
+            let inv_mass1 = obj1.inv_mass;
+            let together_inv_mass = obj0.inv_mass + obj1.inv_mass;
+            let imr0 = obj0.inv_mass / together_inv_mass;
+            let imr1 = obj1.inv_mass / together_inv_mass;
+            let factor = (d - target) / d;
+            obj0.move_vec += diff * factor * imr0;
+            obj1.move_vec -= diff * factor * imr1;
+            // preserve impulse
+            let ebounce = 0.5; //const_param::BOUNCE;
+            let n = diff / d;
+            let impulse_j =
+                (1.0 + ebounce) * (obj0.velocity - obj1.velocity).dot(n) / together_inv_mass;
+            // p1,apply impulse
+            obj0.old_move_vec += n * (impulse_j * inv_mass0);
+            //p1->m_hit_mask.set(p2->m_colli_attr);
+            // p2,apply impulse
+            obj1.old_move_vec -= n * (impulse_j * inv_mass1);
+            //p2->m_hit_mask.set(p1->m_colli_attr);
+        }
     }
+}
+
+fn physical_obj_do_verlet_system(
+    time: Res<Time>,
+    mut physics_resource: ResMut<PhysicsResource>,
+    mut query: Query<(&mut PhysicalObj, &mut Transform)>,
+) {
+    let dt = time.delta_seconds();
+    if dt <= 0. {
+        return;
+    };
+    let inv_prev_dt = 1. / physics_resource.prev_dt;
+    let damping = 0.4;
+    let decel = f32::powf(damping, dt);
+    for (mut obj, mut transform) in query.iter_mut() {
+        let pos = transform.translation.xy() + obj.move_vec;
+        let mut tmp = obj.old_pos + obj.move_vec;
+        tmp = tmp + obj.old_move_vec; //change velocity
+
+        // do verlet
+        let vel = (pos - tmp) * inv_prev_dt;
+        let inv_mass_dt = obj.inv_mass * dt;
+        let vel = vel + obj.force * inv_mass_dt;
+        let vel = vel * decel; //damping
+
+        let tmp = pos + vel * dt;
+
+        // set_position
+        let translation = &mut transform.translation;
+        *translation = tmp.extend(translation.z);
+        obj.old_pos = pos;
+        // set_velocity
+        obj.velocity = vel;
+    }
+    physics_resource.prev_dt = dt;
 }
 
 // 等速直線運動,bullet等

@@ -6,6 +6,7 @@ pub enum GameSystemSet {
     PreProcess,
     Update,
     UpdatePhysics,
+    PostPhysics,
     PostUpdate,
 }
 
@@ -15,15 +16,34 @@ pub struct MainCamera;
 
 #[derive(Component)]
 pub struct PhysicalObj {
+    pub inv_mass: f32, //0.0fだと質量無限
     pub old_pos: Vec2,
     pub move_vec: Vec2,
+    pub old_move_vec: Vec2,
+    pub force: Vec2,
+    pub velocity: Vec2,
 }
 impl Default for PhysicalObj {
     fn default() -> Self {
         Self {
+            inv_mass: 1.,
             old_pos: Vec2::new(0., 0.),
             move_vec: Vec2::new(0., 0.),
+            old_move_vec: Vec2::new(0., 0.),
+            force: Vec2::new(0., 0.),
+            velocity: Vec2::new(0., 0.),
         }
+    }
+}
+
+// 衝突する,円
+#[derive(Component)]
+pub struct CollideCircle {
+    pub radius: f32,
+}
+impl Default for CollideCircle {
+    fn default() -> Self {
+        Self { radius: 3. }
     }
 }
 
