@@ -1,13 +1,15 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PresentMode};
 use components::{
     CollideCircle, GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
+use show_fps::ShowFPSPlugin;
 
 mod components;
 mod enemy;
 mod player;
+mod show_fps;
 
 #[derive(Resource)]
 struct PhysicsResource {
@@ -32,6 +34,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "bevyruman".into(),
                 resolution: (1280f32, 720f32).into(),
+                present_mode: PresentMode::AutoNoVsync, //fps見るため,vsync off
                 ..Default::default()
             }),
             ..Default::default()
@@ -46,6 +49,7 @@ fn main() {
             ),
         )
         .insert_resource(PhysicsResource { ..default() })
+        .add_plugins(ShowFPSPlugin)
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
