@@ -5,11 +5,15 @@ use components::{
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use show_fps::ShowFPSPlugin;
+use spatial_hashmap::{SpatialHashmap, SquareQuery};
 
 mod components;
 mod enemy;
 mod player;
 mod show_fps;
+pub mod spatial_hashmap;
+
+const SHM_GRID_SIZE: f32 = 5.0;
 
 #[derive(Resource)]
 struct PhysicsResource {
@@ -21,6 +25,11 @@ impl Default for PhysicsResource {
             prev_dt: 1.0 / 60.0,
         }
     }
+}
+
+#[derive(Debug, Resource)]
+pub struct SHM {
+    shm: SpatialHashmap,
 }
 
 fn main() {
@@ -49,6 +58,9 @@ fn main() {
             ),
         )
         .insert_resource(PhysicsResource { ..default() })
+        .insert_resource(SHM {
+            shm: SpatialHashmap::new(SHM_GRID_SIZE),
+        })
         .add_plugins(ShowFPSPlugin)
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
@@ -64,7 +76,11 @@ fn main() {
         )
         .add_systems(
             Update,
-            collision_detection_system.in_set(GameSystemSet::UpdatePhysics),
+            (
+                //collision_detection_system,
+                collision_detection_shm_system,
+            )
+                .in_set(GameSystemSet::UpdatePhysics),
         )
         .add_systems(
             Update,
@@ -85,7 +101,7 @@ fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {
         obj.force = Vec2::ZERO;
     }
 }
-
+/*
 fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut PhysicalObj)>) {
     let mut iter = query.iter_combinations_mut();
     while let Some([(tf0, colli0, mut obj0), (tf1, colli1, mut obj1)]) = iter.fetch_next() {
@@ -116,11 +132,58 @@ fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut
         }
     }
 }
+*/
+
+fn collision_detection_shm_system(
+    #[allow(unused_mut)] mut query: Query<(Entity, &Transform, &CollideCircle, &mut PhysicalObj)>,
+    shm: ResMut<SHM>,
+) {
+    unsafe {
+        for (e0, tf0, colli0, mut obj0) in query.iter_unsafe() {
+            let square_query = SquareQuery::new(tf0.translation.xy(), colli0.radius);
+
+            for (e1, _position) in shm.shm.query(square_query) {
+                if e0 > e1 {
+                    continue;
+                }
+                if let Ok((_, tf1, colli1, mut obj1)) = query.get_unchecked(e1) {
+                    // do something with the components
+                    let diff = tf1.translation.xy() - tf0.translation.xy();
+                    let d = diff.length();
+                    let target = colli0.radius + colli1.radius;
+                    if d > 0. && d <= target {
+                        // d==0: same particle
+                        let inv_mass0 = obj0.inv_mass;
+                        let inv_mass1 = obj1.inv_mass;
+                        let together_inv_mass = obj0.inv_mass + obj1.inv_mass;
+                        let imr0 = obj0.inv_mass / together_inv_mass;
+                        let imr1 = obj1.inv_mass / together_inv_mass;
+                        let factor = (d - target) / d;
+                        obj0.move_vec += diff * factor * imr0;
+                        obj1.move_vec -= diff * factor * imr1;
+                        // preserve impulse
+                        let ebounce = 0.5; //const_param::BOUNCE;
+                        let n = diff / d;
+                        let impulse_j = (1.0 + ebounce) * (obj0.velocity - obj1.velocity).dot(n)
+                            / together_inv_mass;
+                        // p1,apply impulse
+                        obj0.old_move_vec += n * (impulse_j * inv_mass0);
+                        //p1->m_hit_mask.set(p2->m_colli_attr);
+                        // p2,apply impulse
+                        obj1.old_move_vec -= n * (impulse_j * inv_mass1);
+                        //p2->m_hit_mask.set(p1->m_colli_attr);
+                    }
+                }
+            }
+        }
+    }
+}
 
 fn physical_obj_do_verlet_system(
     time: Res<Time>,
     mut physics_resource: ResMut<PhysicsResource>,
-    mut query: Query<(&mut PhysicalObj, &mut Transform)>,
+    mut shm: ResMut<SHM>,
+    mut query: Query<(Entity, &mut PhysicalObj, &mut Transform)>,
 ) {
     let dt = time.delta_seconds();
     if dt <= 0. {
@@ -129,7 +192,7 @@ fn physical_obj_do_verlet_system(
     let inv_prev_dt = 1. / physics_resource.prev_dt;
     let damping = 0.4;
     let decel = f32::powf(damping, dt);
-    for (mut obj, mut transform) in query.iter_mut() {
+    for (entity, mut obj, mut transform) in query.iter_mut() {
         let pos = transform.translation.xy() + obj.move_vec;
         let mut tmp = obj.old_pos + obj.move_vec;
         tmp = tmp + obj.old_move_vec; //change velocity
@@ -142,6 +205,9 @@ fn physical_obj_do_verlet_system(
 
         let tmp = pos + vel * dt;
 
+        // shm更新
+        shm.shm
+            .update(entity, transform.translation.truncate(), tmp);
         // set_position
         let translation = &mut transform.translation;
         *translation = tmp.extend(translation.z);

@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::{components::*, SHM};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 use std::{f32::consts::PI, time::Duration};
@@ -10,7 +10,10 @@ pub struct EnemyCount {
 }
 impl Default for EnemyCount {
     fn default() -> Self {
-        Self { count: 0, max: 10 }
+        Self {
+            count: 0,
+            max: 1000,
+        }
     }
 }
 
@@ -44,6 +47,7 @@ fn random_circle(st_r: f32, ed_r: f32) -> Vec2 {
 fn enemy_spawn_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
+    mut shm: ResMut<SHM>,
     q_player: Query<&Transform, With<Player>>,
 ) {
     let Ok(pl_tf) = q_player.get_single() else {
@@ -51,7 +55,7 @@ fn enemy_spawn_system(
     };
     if enemy_count.count < enemy_count.max {
         let pos = random_circle(100., 200.) + pl_tf.translation.xy();
-        commands
+        let entity_id = commands
             .spawn(SpriteBundle {
                 sprite: Sprite {
                     color: Color::rgb_u8(222, 184, 135),
@@ -69,8 +73,10 @@ fn enemy_spawn_system(
                 old_pos: pos,
                 ..default()
             })
-            .insert(CollideCircle { ..default() });
+            .insert(CollideCircle { ..default() })
+            .id();
 
+        shm.shm.insert(pos, entity_id);
         enemy_count.count += 1;
     }
 }

@@ -53,7 +53,10 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
                 old_pos: player_pos,
                 ..default()
             })
-            .insert(CollideCircle { ..default() });
+            .insert(CollideCircle {
+                radius: 3.,
+                ..default()
+            });
 
         player_state.alive = true; //spawned
     }

@@ -43,7 +43,7 @@ pub struct CollideCircle {
 }
 impl Default for CollideCircle {
     fn default() -> Self {
-        Self { radius: 3. }
+        Self { radius: 4. }
     }
 }
 
