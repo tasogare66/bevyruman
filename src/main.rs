@@ -4,12 +4,14 @@ use components::{
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
-use show_fps::ShowFPSPlugin;
+use show_debug::ShowDebugPlugin;
+use show_fps::ShowFpsPlugin;
 use spatial_hashmap::{SpatialHashmap, SquareQuery};
 
 mod components;
 mod enemy;
 mod player;
+mod show_debug;
 mod show_fps;
 pub mod spatial_hashmap;
 
@@ -61,7 +63,7 @@ fn main() {
         .insert_resource(SHM {
             shm: SpatialHashmap::new(SHM_GRID_SIZE),
         })
-        .add_plugins(ShowFPSPlugin)
+        .add_plugins((ShowDebugPlugin, ShowFpsPlugin))
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
         .add_systems(Update, bevy::window::close_on_esc)

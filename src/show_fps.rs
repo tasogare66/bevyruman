@@ -2,9 +2,9 @@ use bevy::diagnostic::DiagnosticsStore;
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 
-pub struct ShowFPSPlugin;
+pub struct ShowFpsPlugin;
 
-impl Plugin for ShowFPSPlugin {
+impl Plugin for ShowFpsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .add_systems(Startup, setup_fps_counter)
