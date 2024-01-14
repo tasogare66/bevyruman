@@ -109,7 +109,8 @@ fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {
         obj.force = Vec2::ZERO;
     }
 }
-/*
+
+#[allow(dead_code)]
 fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut PhysicalObj)>) {
     let mut iter = query.iter_combinations_mut();
     while let Some([(tf0, colli0, mut obj0), (tf1, colli1, mut obj1)]) = iter.fetch_next() {
@@ -140,7 +141,6 @@ fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut
         }
     }
 }
-*/
 
 fn collision_detection_shm_system(
     #[allow(unused_mut)] mut query: Query<(Entity, &Transform, &CollideCircle, &mut PhysicalObj)>,

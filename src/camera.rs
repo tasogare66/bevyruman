@@ -4,12 +4,17 @@ use crate::components::{MainCamera, Player};
 
 pub fn update_camera_system(
     player_query: Query<&Transform, With<Player>>,
-    mut camera_query: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
+    mut camera_query: Query<
+        (&mut Transform, &mut OrthographicProjection),
+        (With<MainCamera>, Without<Player>),
+    >,
 ) {
-    let Ok(player) = player_query.get_single() else {
+    let Ok((mut transform, mut proj)) = camera_query.get_single_mut() else {
         return;
     };
-    let Ok(mut transform) = camera_query.get_single_mut() else {
+    proj.scale = 1. / 4.;
+
+    let Ok(player) = player_query.get_single() else {
         return;
     };
 
