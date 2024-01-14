@@ -1,6 +1,6 @@
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
 use components::{
-    CollideCircle, GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
+    CollideCircle, GameSystemSet, Health, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
 };
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
@@ -91,6 +91,10 @@ fn main() {
             physical_obj_do_verlet_system.in_set(GameSystemSet::PostPhysics),
         )
         .add_systems(
+            Update,
+            update_health_system.in_set(GameSystemSet::PostUpdate),
+        )
+        .add_systems(
             PostUpdate,
             camera::update_camera_system.run_if(on_timer(Duration::from_secs_f32(1. / 60.))),
         )
@@ -102,11 +106,12 @@ fn setup_system(mut commands: Commands) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
-fn physical_obj_pre_proc_system(mut query: Query<&mut PhysicalObj>) {
-    for mut obj in query.iter_mut() {
+fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {
+    for (transform, mut obj) in query.iter_mut() {
         obj.move_vec = Vec2::ZERO;
         obj.old_move_vec = Vec2::ZERO;
         obj.force = Vec2::ZERO;
+        obj.velocity = transform.translation.xy() - obj.old_pos;
     }
 }
 
@@ -245,6 +250,15 @@ fn update_lifetime_system(
     for (entity, mut timer) in query.iter_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+// 体力更新
+fn update_health_system(mut commands: Commands, query: Query<(Entity, &Health)>) {
+    for (entity, &ref health) in query.iter() {
+        if health.0 <= 0. {
             commands.entity(entity).despawn();
         }
     }

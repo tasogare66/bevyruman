@@ -50,6 +50,10 @@ impl Default for CollideCircle {
 #[derive(Component)]
 pub struct Lifetime(pub Timer);
 
+// 体力,0でdespawn
+#[derive(Component)]
+pub struct Health(pub f32);
+
 // 等速直線運動
 #[derive(Component)]
 pub struct UniformVelocity(pub Vec2);

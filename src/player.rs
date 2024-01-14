@@ -141,11 +141,12 @@ fn player_input_shot_event_system(
                 .spawn(SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgb(0.95, 0.95, 0.95),
-                        custom_size: Some(Vec2::new(4., 8.)),
+                        custom_size: Some(Vec2::new(8., 4.)),
                         ..Default::default()
                     },
                     transform: Transform {
                         translation: bullet_pos.extend(10.),
+                        rotation: Quat::from_rotation_z(dir.y.atan2(dir.x)), //angle
                         ..Default::default()
                     },
                     ..default()

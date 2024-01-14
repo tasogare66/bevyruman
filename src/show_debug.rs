@@ -1,3 +1,4 @@
+use crate::components::*;
 use bevy::prelude::*;
 
 pub struct ShowDebugPlugin;
@@ -5,7 +6,10 @@ pub struct ShowDebugPlugin;
 impl Plugin for ShowDebugPlugin {
     fn build(&self, app: &mut App) {
         if cfg!(debug_assertions) {
-            app.add_systems(Update, (show_bg_gizmo_system,));
+            app.add_systems(
+                Update,
+                (show_bg_gizmo_system, show_colli_gizmo_system).in_set(GameSystemSet::PostUpdate),
+            );
         }
     }
 }
@@ -19,4 +23,13 @@ fn show_bg_gizmo_system(mut gizmos: Gizmos) {
     gizmos
         .circle_2d(Vec2::ZERO, 170., Color::WHITE)
         .segments(64);
+}
+
+fn show_colli_gizmo_system(mut gizmos: Gizmos, query: Query<(&Transform, &CollideCircle)>) {
+    for (transform, colli) in query.iter() {
+        let pos = transform.translation.xy();
+        gizmos
+            .circle_2d(pos, colli.radius, Color::ORANGE)
+            .segments(16);
+    }
 }
