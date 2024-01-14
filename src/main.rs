@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
 use components::{
     CollideCircle, GameSystemSet, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
 };
@@ -7,7 +7,9 @@ use player::PlayerPlugin;
 use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
 use spatial_hashmap::{SpatialHashmap, SquareQuery};
+use std::time::Duration;
 
+mod camera;
 mod components;
 mod enemy;
 mod player;
@@ -87,6 +89,10 @@ fn main() {
         .add_systems(
             Update,
             physical_obj_do_verlet_system.in_set(GameSystemSet::PostPhysics),
+        )
+        .add_systems(
+            PostUpdate,
+            camera::update_camera_system.run_if(on_timer(Duration::from_secs_f32(1. / 60.))),
         )
         .run();
 }
