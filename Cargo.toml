@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.12.1"
 rand = "0.8.5"
+smallvec = { version = "1.6", features = ["const_generics"] } # same as bevy 0.12
 
 [workspace]
 resolver = "2"

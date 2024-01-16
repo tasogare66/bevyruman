@@ -6,7 +6,7 @@ use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
-use spatial_hashmap::{SpatialHashmap, SquareQuery};
+use sparse_grid::{Aabb, SparseGrid2d};
 use std::time::Duration;
 
 mod camera;
@@ -15,9 +15,10 @@ mod enemy;
 mod player;
 mod show_debug;
 mod show_fps;
+pub mod sparse_grid;
 pub mod spatial_hashmap;
 
-const SHM_GRID_SIZE: f32 = 5.0;
+const TILE_SIZE: usize = 5;
 
 #[derive(Resource)]
 struct PhysicsResource {
@@ -33,7 +34,7 @@ impl Default for PhysicsResource {
 
 #[derive(Debug, Resource)]
 pub struct SHM {
-    shm: SpatialHashmap,
+    sg2: SparseGrid2d<TILE_SIZE>,
 }
 
 fn main() {
@@ -63,7 +64,7 @@ fn main() {
         )
         .insert_resource(PhysicsResource { ..default() })
         .insert_resource(SHM {
-            shm: SpatialHashmap::new(SHM_GRID_SIZE),
+            sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin))
         .add_plugins((PlayerPlugin, EnemyPlugin))
@@ -71,7 +72,11 @@ fn main() {
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(
             Update,
-            (physical_obj_pre_proc_system, update_lifetime_system)
+            (
+                physical_obj_pre_proc_system,
+                shm_pre_proc_system,
+                update_lifetime_system,
+            )
                 .in_set(GameSystemSet::PreProcess),
         )
         .add_systems(
@@ -81,8 +86,8 @@ fn main() {
         .add_systems(
             Update,
             (
-                //collision_detection_system,
-                collision_detection_shm_system,
+                collision_detection_system,
+                //collision_detection_shm_system,
             )
                 .in_set(GameSystemSet::UpdatePhysics),
         )
@@ -112,6 +117,17 @@ fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>
         obj.old_move_vec = Vec2::ZERO;
         obj.force = Vec2::ZERO;
         obj.velocity = transform.translation.xy() - obj.old_pos;
+    }
+}
+
+fn shm_pre_proc_system(mut shm: ResMut<SHM>, query: Query<(Entity, &Transform, &CollideCircle)>) {
+    // clearして、登録しなおす
+    shm.sg2.soft_clear();
+    for (entity, transform, colli) in query.iter() {
+        shm.sg2.insert_aabb(
+            Aabb::from_circle(transform.translation.xy(), colli.radius),
+            entity,
+        );
     }
 }
 
@@ -149,13 +165,14 @@ fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut
 
 fn collision_detection_shm_system(
     #[allow(unused_mut)] mut query: Query<(Entity, &Transform, &CollideCircle, &mut PhysicalObj)>,
-    shm: ResMut<SHM>,
+    shm: Res<SHM>,
 ) {
     unsafe {
         for (e0, tf0, colli0, mut obj0) in query.iter_unsafe() {
-            let square_query = SquareQuery::new(tf0.translation.xy(), colli0.radius);
-
-            for (e1, _position) in shm.shm.query(square_query) {
+            for e1 in shm
+                .sg2
+                .aabb_iter(Aabb::from_circle(tf0.translation.xy(), colli0.radius))
+            {
                 if e0 > e1 {
                     continue;
                 }
@@ -195,7 +212,6 @@ fn collision_detection_shm_system(
 fn physical_obj_do_verlet_system(
     time: Res<Time>,
     mut physics_resource: ResMut<PhysicsResource>,
-    mut shm: ResMut<SHM>,
     mut query: Query<(Entity, &mut PhysicalObj, &mut Transform)>,
 ) {
     let dt = time.delta_seconds();
@@ -205,7 +221,7 @@ fn physical_obj_do_verlet_system(
     let inv_prev_dt = 1. / physics_resource.prev_dt;
     let damping = 0.4;
     let decel = f32::powf(damping, dt);
-    for (entity, mut obj, mut transform) in query.iter_mut() {
+    for (_entity, mut obj, mut transform) in query.iter_mut() {
         let pos = transform.translation.xy() + obj.move_vec;
         let mut tmp = obj.old_pos + obj.move_vec;
         tmp = tmp + obj.old_move_vec; //change velocity
@@ -218,9 +234,6 @@ fn physical_obj_do_verlet_system(
 
         let tmp = pos + vel * dt;
 
-        // shm更新
-        shm.shm
-            .update(entity, transform.translation.truncate(), tmp);
         // set_position
         let translation = &mut transform.translation;
         *translation = tmp.extend(translation.z);
