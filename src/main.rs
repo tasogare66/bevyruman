@@ -86,8 +86,8 @@ fn main() {
         .add_systems(
             Update,
             (
-                collision_detection_system,
-                //collision_detection_shm_system,
+                //collision_detection_system,
+                collision_detection_shm_system,
             )
                 .in_set(GameSystemSet::UpdatePhysics),
         )
@@ -171,7 +171,7 @@ fn collision_detection_shm_system(
         for (e0, tf0, colli0, mut obj0) in query.iter_unsafe() {
             for e1 in shm
                 .sg2
-                .aabb_iter(Aabb::from_circle(tf0.translation.xy(), colli0.radius))
+                .query_aabb(Aabb::from_circle(tf0.translation.xy(), colli0.radius))
             {
                 if e0 > e1 {
                     continue;

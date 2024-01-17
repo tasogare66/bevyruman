@@ -10,7 +10,10 @@ pub struct EnemyCount {
 }
 impl Default for EnemyCount {
     fn default() -> Self {
-        Self { count: 0, max: 100 }
+        Self {
+            count: 0,
+            max: 1000,
+        }
     }
 }
 
