@@ -49,6 +49,17 @@ impl Default for CollideCircle {
     }
 }
 
+// 接触判定する,円
+#[derive(Component)]
+pub struct HitCircle {
+    pub radius: f32,
+}
+impl Default for HitCircle {
+    fn default() -> Self {
+        Self { radius: 3. }
+    }
+}
+
 #[derive(Component)]
 pub struct Lifetime(pub Timer);
 
@@ -82,3 +93,13 @@ pub struct FromPlayer;
 
 #[derive(Component)]
 pub struct Enemy;
+
+#[derive(Component)]
+pub struct DamageSource {
+    pub damage: f32,
+}
+impl Default for DamageSource {
+    fn default() -> Self {
+        Self { damage: 1. }
+    }
+}

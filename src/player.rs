@@ -160,6 +160,8 @@ fn player_input_shot_event_system(
                     ..default()
                 })
                 .insert(Lifetime(Timer::from_seconds(1., TimerMode::Once)))
+                .insert(DamageSource { ..default() })
+                .insert(HitCircle { ..default() })
                 .insert(FromPlayer);
         };
         spawn_bullet(dir * 4.);

@@ -1,7 +1,5 @@
+use crate::components::*;
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
-use components::{
-    CollideCircle, GameSystemSet, Health, Lifetime, MainCamera, PhysicalObj, UniformVelocity,
-};
 use enemy::EnemyPlugin;
 use player::PlayerPlugin;
 use show_debug::ShowDebugPlugin;
@@ -86,6 +84,7 @@ fn main() {
         .add_systems(
             Update,
             (
+                bullet_vs_enemy_system,
                 //collision_detection_system,
                 collision_detection_shm_system,
                 //(move_ball_system, shm_pre_proc_system).chain(),
@@ -102,7 +101,7 @@ fn main() {
         )
         .add_systems(
             Update,
-            update_health_system.in_set(GameSystemSet::PostUpdate),
+            (update_health_system, update_damage_system).in_set(GameSystemSet::PostUpdate),
         )
         .add_systems(
             PostUpdate,
@@ -328,6 +327,46 @@ fn physical_obj_do_verlet_system(
     physics_resource.prev_dt = dt;
 }
 
+fn intersect_circle_vs_circle(c0: Vec2, r0: f32, c1: Vec2, r1: f32) -> bool {
+    let diff = c1 - c0;
+    let sqr_d = diff.length_squared();
+    let target = r0 + r1;
+    sqr_d <= target * target
+}
+
+fn bullet_vs_enemy_system(
+    mut bullet_query: Query<(Entity, &Transform, &HitCircle, &mut DamageSource), With<FromPlayer>>,
+    mut ene_query: Query<(Entity, &Transform, &CollideCircle, &mut Health), With<Enemy>>,
+    shm: Res<SHM>,
+) {
+    for (e0, tf0, hit0, mut dmg0) in bullet_query.iter_mut() {
+        //
+        for e1 in shm
+            .sg2
+            .query_aabb(Aabb::from_circle(tf0.translation.xy(), hit0.radius))
+        {
+            if let Ok((_, tf1, colli1, mut health1)) = ene_query.get_mut(e1) {
+                if dmg0.damage <= 0. {
+                    break;
+                }
+                if health1.0 <= 0. {
+                    continue;
+                }
+                if intersect_circle_vs_circle(
+                    tf0.translation.xy(),
+                    hit0.radius,
+                    tf1.translation.xy(),
+                    colli1.radius,
+                ) {
+                    let health = health1.0;
+                    health1.0 -= dmg0.damage;
+                    dmg0.damage -= health;
+                }
+            }
+        }
+    }
+}
+
 // 等速直線運動,bullet等
 fn uniform_linear_motion_system(
     time: Res<Time>,
@@ -356,6 +395,13 @@ fn update_lifetime_system(
 fn update_health_system(mut commands: Commands, query: Query<(Entity, &Health)>) {
     for (entity, &ref health) in query.iter() {
         if health.0 <= 0. {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+fn update_damage_system(mut commands: Commands, query: Query<(Entity, &DamageSource)>) {
+    for (entity, dmg) in query.iter() {
+        if dmg.damage <= 0. {
             commands.entity(entity).despawn();
         }
     }
