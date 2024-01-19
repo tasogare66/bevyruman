@@ -22,6 +22,7 @@ pub struct PhysicalObj {
     pub old_move_vec: Vec2,
     pub force: Vec2,
     pub velocity: Vec2,
+    pub collision_count: u32,
 }
 impl Default for PhysicalObj {
     fn default() -> Self {
@@ -32,6 +33,7 @@ impl Default for PhysicalObj {
             old_move_vec: Vec2::new(0., 0.),
             force: Vec2::new(0., 0.),
             velocity: Vec2::new(0., 0.),
+            collision_count: 0,
         }
     }
 }

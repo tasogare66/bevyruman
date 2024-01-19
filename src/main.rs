@@ -88,12 +88,17 @@ fn main() {
             (
                 //collision_detection_system,
                 collision_detection_shm_system,
+                //(move_ball_system, shm_pre_proc_system).chain(),
             )
                 .in_set(GameSystemSet::UpdatePhysics),
         )
         .add_systems(
             Update,
-            physical_obj_do_verlet_system.in_set(GameSystemSet::PostPhysics),
+            (
+                physical_obj_do_verlet_system,
+                //do_constraints_system
+            )
+                .in_set(GameSystemSet::PostPhysics),
         )
         .add_systems(
             Update,
@@ -117,6 +122,7 @@ fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>
         obj.old_move_vec = Vec2::ZERO;
         obj.force = Vec2::ZERO;
         obj.velocity = transform.translation.xy() - obj.old_pos;
+        obj.collision_count = 0;
     }
 }
 
@@ -128,6 +134,80 @@ fn shm_pre_proc_system(mut shm: ResMut<SHM>, query: Query<(Entity, &Transform, &
             Aabb::from_circle(transform.translation.xy(), colli.radius),
             entity,
         );
+    }
+}
+
+#[allow(dead_code)]
+fn move_ball_system(mut query: Query<(&mut PhysicalObj, &mut Transform)>) {
+    for (mut obj, mut transform) in query.iter_mut() {
+        let pos_next = transform.translation.xy() + obj.move_vec;
+        let pos_old = obj.old_pos + obj.move_vec;
+        let vel = pos_next - pos_old;
+        let max_speed = if obj.collision_count >= 2 {
+            4. * (1.0 / obj.collision_count as f32)
+        } else {
+            100.
+        };
+        let len = vel.length();
+        let rcp = len.recip();
+        let spd = len.min(max_speed);
+
+        let pos_next = pos_next
+            + if rcp.is_finite() && rcp > 0.0 {
+                vel * rcp * spd //normalize * spd
+            } else {
+                Vec2::ZERO
+            };
+        let pos_old = pos_old + vel;
+
+        let translation = &mut transform.translation;
+        *translation = pos_next.extend(translation.z);
+        obj.old_pos = pos_old;
+    }
+}
+
+#[allow(dead_code)]
+fn do_constraints_system(
+    #[allow(unused_mut)] mut query: Query<(
+        Entity,
+        &mut Transform,
+        &CollideCircle,
+        &mut PhysicalObj,
+    )>,
+    _shm: Res<SHM>,
+) {
+    #[allow(unused_unsafe)]
+    unsafe {
+        // for (e0, mut tf0, colli0, mut obj0) in query.iter_unsafe() {
+        //     for e1 in _shm
+        //         .sg2
+        //         .query_aabb(Aabb::from_circle(tf0.translation.xy(), colli0.radius))
+        //     {
+        let mut iter = query.iter_combinations_mut();
+        while let Some([(_e0, mut tf0, colli0, mut obj0), (_e1, mut tf1, colli1, mut obj1)]) =
+            iter.fetch_next()
+        {
+            // if e0 > e1 {
+            //     continue;
+            // }
+            // if let Ok((_, mut tf1, colli1, mut obj1)) = query.get_unchecked(e1) {
+            // do something with the components
+            let diff = tf1.translation.xy() - tf0.translation.xy();
+            let dist = diff.length();
+            let depth = colli0.radius + colli1.radius - dist;
+            if dist > 0. && depth > 0. {
+                // d==0: same particle
+                let fac = 1. / dist * depth * 0.5;
+                let mv = diff * fac;
+                tf0.translation += mv.extend(0.);
+                obj0.old_pos += mv;
+                obj0.collision_count += 1;
+                tf1.translation -= mv.extend(0.);
+                obj1.collision_count += 1;
+                obj1.old_pos -= mv;
+            }
+            // }
+        }
     }
 }
 
@@ -155,9 +235,11 @@ fn collision_detection_system(mut query: Query<(&Transform, &CollideCircle, &mut
                 (1.0 + ebounce) * (obj0.velocity - obj1.velocity).dot(n) / together_inv_mass;
             // p1,apply impulse
             obj0.old_move_vec += n * (impulse_j * inv_mass0);
+            obj0.collision_count += 1;
             //p1->m_hit_mask.set(p2->m_colli_attr);
             // p2,apply impulse
             obj1.old_move_vec -= n * (impulse_j * inv_mass1);
+            obj0.collision_count += 1;
             //p2->m_hit_mask.set(p1->m_colli_attr);
         }
     }
@@ -198,9 +280,11 @@ fn collision_detection_shm_system(
                             / together_inv_mass;
                         // p1,apply impulse
                         obj0.old_move_vec += n * (impulse_j * inv_mass0);
+                        obj0.collision_count += 1;
                         //p1->m_hit_mask.set(p2->m_colli_attr);
                         // p2,apply impulse
                         obj1.old_move_vec -= n * (impulse_j * inv_mass1);
+                        obj1.collision_count += 1;
                         //p2->m_hit_mask.set(p1->m_colli_attr);
                     }
                 }
