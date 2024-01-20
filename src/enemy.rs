@@ -5,8 +5,8 @@ use std::{f32::consts::PI, time::Duration};
 
 #[derive(Resource)]
 pub struct EnemyCount {
-    count: u32,
-    max: u32,
+    pub count: u32,
+    pub max: u32,
 }
 impl Default for EnemyCount {
     fn default() -> Self {

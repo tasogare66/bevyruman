@@ -1,6 +1,6 @@
 use crate::components::*;
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
-use enemy::EnemyPlugin;
+use enemy::{EnemyCount, EnemyPlugin};
 use player::PlayerPlugin;
 use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
@@ -70,12 +70,7 @@ fn main() {
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(
             Update,
-            (
-                physical_obj_pre_proc_system,
-                shm_pre_proc_system,
-                update_lifetime_system,
-            )
-                .in_set(GameSystemSet::PreProcess),
+            (physical_obj_pre_proc_system, shm_pre_proc_system).in_set(GameSystemSet::PreProcess),
         )
         .add_systems(
             Update,
@@ -101,7 +96,7 @@ fn main() {
         )
         .add_systems(
             Update,
-            (update_health_system, update_damage_system).in_set(GameSystemSet::PostUpdate),
+            (update_entity_existence_system,).in_set(GameSystemSet::PostUpdate),
         )
         .add_systems(
             PostUpdate,
@@ -339,7 +334,7 @@ fn bullet_vs_enemy_system(
     mut ene_query: Query<(Entity, &Transform, &CollideCircle, &mut Health), With<Enemy>>,
     shm: Res<SHM>,
 ) {
-    for (e0, tf0, hit0, mut dmg0) in bullet_query.iter_mut() {
+    for (_, tf0, hit0, mut dmg0) in bullet_query.iter_mut() {
         //
         for e1 in shm
             .sg2
@@ -377,32 +372,49 @@ fn uniform_linear_motion_system(
     }
 }
 
-// 生存時間
-fn update_lifetime_system(
+fn update_entity_existence_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Lifetime)>,
+    mut enemy_count: ResMut<EnemyCount>,
+    mut query: Query<(
+        Entity,
+        Option<&mut Lifetime>,
+        Option<&Health>,
+        Option<&DamageSource>,
+        Option<&Enemy>,
+    )>,
 ) {
-    for (entity, mut timer) in query.iter_mut() {
-        timer.0.tick(time.delta());
-        if timer.0.finished() {
-            commands.entity(entity).despawn();
+    for (entity, timer, health, dmg, enemy) in query.iter_mut() {
+        // 生存時間
+        if let Some(mut timer) = timer {
+            timer.0.tick(time.delta());
+            if timer.0.finished() {
+                commands.entity(entity).despawn();
+                if enemy.is_some() {
+                    enemy_count.count -= 1;
+                }
+                continue;
+            }
         }
-    }
-}
-
-// 体力更新
-fn update_health_system(mut commands: Commands, query: Query<(Entity, &Health)>) {
-    for (entity, &ref health) in query.iter() {
-        if health.0 <= 0. {
-            commands.entity(entity).despawn();
+        // 体力
+        if let Some(health) = health {
+            if health.0 <= 0. {
+                commands.entity(entity).despawn();
+                if enemy.is_some() {
+                    enemy_count.count -= 1;
+                }
+                continue;
+            }
         }
-    }
-}
-fn update_damage_system(mut commands: Commands, query: Query<(Entity, &DamageSource)>) {
-    for (entity, dmg) in query.iter() {
-        if dmg.damage <= 0. {
-            commands.entity(entity).despawn();
+        // damage
+        if let Some(dmg) = dmg {
+            if dmg.damage <= 0. {
+                commands.entity(entity).despawn();
+                if enemy.is_some() {
+                    enemy_count.count -= 1;
+                }
+                continue;
+            }
         }
     }
 }
