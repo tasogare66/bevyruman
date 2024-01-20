@@ -1,5 +1,6 @@
 use crate::components::*;
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
+use dw_gui::DwGuiPlugin;
 use enemy::{EnemyCount, EnemyPlugin};
 use player::PlayerPlugin;
 use show_debug::ShowDebugPlugin;
@@ -9,6 +10,7 @@ use std::time::Duration;
 
 mod camera;
 mod components;
+mod dw_gui;
 mod enemy;
 mod player;
 mod show_debug;
@@ -64,7 +66,7 @@ fn main() {
         .insert_resource(SHM {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
-        .add_plugins((ShowDebugPlugin, ShowFpsPlugin))
+        .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_systems(Startup, setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
