@@ -52,31 +52,35 @@ fn enemy_spawn_system(
     let Ok(pl_tf) = q_player.get_single() else {
         return;
     };
-    if enemy_count.count < enemy_count.max {
-        let pos = random_circle(100., 200.) + pl_tf.translation.xy();
-        let _entity_id = commands
-            .spawn(SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgb_u8(222, 184, 135),
-                    custom_size: Some(Vec2::new(8., 8.)),
+    for _ in 0..100 {
+        if enemy_count.count < enemy_count.max {
+            let pos = random_circle(100., 600.) + pl_tf.translation.xy();
+            let _entity_id = commands
+                .spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgb_u8(222, 184, 135),
+                        custom_size: Some(Vec2::new(8., 8.)),
+                        ..default()
+                    },
+                    transform: Transform {
+                        translation: pos.extend(5.),
+                        ..default()
+                    },
                     ..default()
-                },
-                transform: Transform {
-                    translation: pos.extend(5.),
+                })
+                .insert(Enemy)
+                .insert(PhysicalObj {
+                    old_pos: pos,
                     ..default()
-                },
-                ..default()
-            })
-            .insert(Enemy)
-            .insert(PhysicalObj {
-                old_pos: pos,
-                ..default()
-            })
-            .insert(CollideCircle { ..default() })
-            .insert(Health(1.))
-            .id();
+                })
+                .insert(CollideCircle { ..default() })
+                .insert(Health(1.))
+                .id();
 
-        enemy_count.count += 1;
+            enemy_count.count += 1;
+        } else {
+            break;
+        }
     }
 }
 

@@ -302,8 +302,14 @@ fn physical_obj_do_verlet_system(
     let damping = 0.4;
     let decel = f32::powf(damping, dt);
     for (_entity, mut obj, mut transform) in query.iter_mut() {
-        let pos = transform.translation.xy() + obj.move_vec;
-        let mut tmp = obj.old_pos + obj.move_vec;
+        let mov_vec = obj.move_vec
+            * if obj.collision_count >= 2 {
+                (obj.collision_count as f32).recip() //FIXME:適当な対応
+            } else {
+                1.
+            };
+        let pos = transform.translation.xy() + mov_vec;
+        let mut tmp = obj.old_pos + mov_vec;
         tmp = tmp + obj.old_move_vec; //change velocity
 
         // do verlet
