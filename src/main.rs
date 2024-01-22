@@ -16,7 +16,6 @@ mod player;
 mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
-pub mod spatial_hashmap;
 
 const TILE_SIZE: usize = 5;
 
