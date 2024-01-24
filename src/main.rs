@@ -17,7 +17,7 @@ mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
 
-const TILE_SIZE: usize = 5;
+const TILE_SIZE: usize = 10;
 
 #[derive(Resource)]
 struct PhysicsResource {

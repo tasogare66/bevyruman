@@ -12,7 +12,7 @@ impl Default for EnemyCount {
     fn default() -> Self {
         Self {
             count: 0,
-            max: 1000,
+            max: 5000,
         }
     }
 }

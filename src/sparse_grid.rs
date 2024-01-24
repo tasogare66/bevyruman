@@ -32,7 +32,7 @@ type Key = (i32, i32);
 /// A spatial container that allows querying for entities that share one or more grid cell
 #[derive(Default, Reflect, Debug, Clone, Resource)]
 pub struct SparseGrid2d<const TILE_SIZE: usize = 1> {
-    map: HashMap<Key, SmallVec<[Entity; 5]>>,
+    map: HashMap<Key, SmallVec<[Entity; 16]>>,
 }
 
 impl<const TILE_SIZE: usize> SparseGrid2d<TILE_SIZE> {
