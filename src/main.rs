@@ -7,6 +7,7 @@ use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
 use sparse_grid::{Aabb, SparseGrid2d};
 use std::time::Duration;
+use ui_game::UiGamePlugin;
 
 mod camera;
 mod components;
@@ -16,6 +17,7 @@ mod player;
 mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
+mod ui_game;
 
 const TILE_SIZE: usize = 10;
 
@@ -34,6 +36,11 @@ impl Default for PhysicsResource {
 #[derive(Debug, Resource)]
 pub struct SHM {
     sg2: SparseGrid2d<TILE_SIZE>,
+}
+
+#[derive(Resource)]
+pub struct GameFonts {
+    cmn: Handle<Font>,
 }
 
 fn main() {
@@ -66,8 +73,9 @@ fn main() {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
+        .add_systems(PreStartup, pre_startup_setup_system)
         .add_plugins((PlayerPlugin, EnemyPlugin))
-        .add_systems(Startup, setup_system)
+        .add_plugins((UiGamePlugin,))
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(
             Update,
@@ -106,9 +114,14 @@ fn main() {
         .run();
 }
 
-fn setup_system(mut commands: Commands) {
+fn pre_startup_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     // camera
     commands.spawn((Camera2dBundle::default(), MainCamera));
+    // add font resource
+    let game_fonts = GameFonts {
+        cmn: asset_server.load("MPLUS1Code-Regular.ttf"),
+    };
+    commands.insert_resource(game_fonts);
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {
