@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::{components::*, AppState};
 use bevy::{prelude::*, window::PrimaryWindow};
 
 #[derive(Resource)]
@@ -23,11 +23,14 @@ impl Plugin for PlayerPlugin {
                     player_input_shot_event_system,
                 )
                     .chain()
-                    .in_set(GameSystemSet::Update),
+                    .in_set(GameSystemSet::Update)
+                    .run_if(in_state(AppState::InGame)),
             )
             .add_systems(
                 Update,
-                player_spawn_system.in_set(GameSystemSet::PostUpdate),
+                player_spawn_system
+                    .in_set(GameSystemSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }

@@ -17,6 +17,7 @@ mod player;
 mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
+mod title;
 mod ui_game;
 
 const TILE_SIZE: usize = 10;
@@ -41,6 +42,13 @@ pub struct SHM {
 #[derive(Resource)]
 pub struct GameFonts {
     cmn: Handle<Font>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum AppState {
+    #[default]
+    Title,
+    InGame,
 }
 
 fn main() {
@@ -74,16 +82,29 @@ fn main() {
         })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
-        .add_plugins((PlayerPlugin, EnemyPlugin))
-        .add_plugins((UiGamePlugin,))
         .add_systems(Update, bevy::window::close_on_esc)
+        .add_state::<AppState>()
+        //Title
+        .add_systems(OnEnter(AppState::Title), title::setup_title)
         .add_systems(
             Update,
-            (physical_obj_pre_proc_system, shm_pre_proc_system).in_set(GameSystemSet::PreProcess),
+            title::title_system.run_if(in_state(AppState::Title)),
+        )
+        .add_systems(OnExit(AppState::Title), title::cleanup_title)
+        //InGame
+        .add_plugins((PlayerPlugin, EnemyPlugin))
+        .add_plugins((UiGamePlugin,))
+        .add_systems(
+            Update,
+            (physical_obj_pre_proc_system, shm_pre_proc_system)
+                .in_set(GameSystemSet::PreProcess)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             Update,
-            uniform_linear_motion_system.in_set(GameSystemSet::Update),
+            uniform_linear_motion_system
+                .in_set(GameSystemSet::Update)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             Update,
@@ -93,7 +114,8 @@ fn main() {
                 collision_detection_shm_system,
                 //(move_ball_system, shm_pre_proc_system).chain(),
             )
-                .in_set(GameSystemSet::UpdatePhysics),
+                .in_set(GameSystemSet::UpdatePhysics)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             Update,
@@ -101,15 +123,20 @@ fn main() {
                 physical_obj_do_verlet_system,
                 //do_constraints_system
             )
-                .in_set(GameSystemSet::PostPhysics),
+                .in_set(GameSystemSet::PostPhysics)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             Update,
-            (update_entity_existence_system,).in_set(GameSystemSet::PostUpdate),
+            (update_entity_existence_system,)
+                .in_set(GameSystemSet::PostUpdate)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             PostUpdate,
-            camera::update_camera_system.run_if(on_timer(Duration::from_secs_f32(1. / 60.))),
+            camera::update_camera_system
+                .run_if(on_timer(Duration::from_secs_f32(1. / 60.)))
+                .run_if(in_state(AppState::InGame)),
         )
         .run();
 }

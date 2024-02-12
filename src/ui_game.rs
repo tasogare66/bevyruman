@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-use crate::GameFonts;
+use crate::{AppState, GameFonts};
 
 pub struct UiGamePlugin;
 
 impl Plugin for UiGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_ui_game);
+        app.add_systems(OnEnter(AppState::InGame), setup_ui_game);
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::{components::*, AppState};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 use std::{f32::consts::PI, time::Duration};
@@ -22,12 +22,18 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnemyCount { ..default() })
-            .add_systems(Update, enemy_movement_system.in_set(GameSystemSet::Update))
+            .add_systems(
+                Update,
+                enemy_movement_system
+                    .in_set(GameSystemSet::Update)
+                    .run_if(in_state(AppState::InGame)),
+            )
             .add_systems(
                 Update,
                 enemy_spawn_system
+                    .in_set(GameSystemSet::PostUpdate)
                     .run_if(on_timer(Duration::from_secs_f32(2. / 60.)))
-                    .in_set(GameSystemSet::PostUpdate),
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }
