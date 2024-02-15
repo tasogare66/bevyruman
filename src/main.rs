@@ -44,11 +44,26 @@ pub struct GameFonts {
     cmn: Handle<Font>,
 }
 
+// waveの状態
+#[derive(Resource)]
+pub struct WaveStatus {
+    timer: Timer,
+}
+impl Default for WaveStatus {
+    fn default() -> Self {
+        Self {
+            timer: Timer::from_seconds(60.0, TimerMode::Once),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum AppState {
     #[default]
     Title,
     InGame,
+    LevelUp,
+    Shop,
 }
 
 fn main() {
@@ -80,6 +95,7 @@ fn main() {
         .insert_resource(SHM {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
+        .insert_resource(WaveStatus { ..default() })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
@@ -128,7 +144,7 @@ fn main() {
         )
         .add_systems(
             Update,
-            (update_entity_existence_system,)
+            (update_entity_existence_system, update_wave_system)
                 .in_set(GameSystemSet::PostUpdate)
                 .run_if(in_state(AppState::InGame)),
         )
@@ -463,5 +479,16 @@ fn update_entity_existence_system(
                 continue;
             }
         }
+    }
+}
+
+fn update_wave_system(
+    time: Res<Time>,
+    mut wave_status: ResMut<WaveStatus>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    wave_status.timer.tick(time.delta());
+    if wave_status.timer.finished() {
+        next_state.set(AppState::LevelUp);
     }
 }
