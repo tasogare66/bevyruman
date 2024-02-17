@@ -1,14 +1,21 @@
 use bevy::prelude::*;
 
-use crate::{AppState, GameFonts};
+use crate::{AppState, GameFonts, WaveStatus};
 
 pub struct UiGamePlugin;
 
 impl Plugin for UiGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), setup_ui_game);
+        app.add_systems(OnEnter(AppState::InGame), setup_ui_game)
+            .add_systems(
+                Update,
+                (update_ui_game_system,).run_if(in_state(AppState::InGame)),
+            );
     }
 }
+
+#[derive(Component)]
+struct TimerText;
 
 fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
     commands
@@ -24,7 +31,7 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn(
+            parent.spawn((
                 // Create a TextBundle that has a Text with a single section.
                 TextBundle::from_section(
                     // Accepts a `String` or any type that converts into a `String`, such as `&str`
@@ -45,7 +52,20 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
                     //justify_content: JustifyContent::Center,
                     ..default()
                 }),
-                //ColorText,
-            );
+                TimerText,
+            ));
         });
+}
+
+fn update_ui_game_system(
+    wave_status: Res<WaveStatus>,
+    mut query: Query<&mut Text, With<TimerText>>,
+) {
+    for mut text in &mut query {
+        let remaining = wave_status.timer.remaining();
+        let mins = remaining.as_secs() / 60;
+        let secs = remaining.as_secs() % 60;
+        let millis = remaining.subsec_millis() / 10;
+        text.sections[0].value = format!("{mins}:{secs:0>2}.{millis:0>2}");
+    }
 }
