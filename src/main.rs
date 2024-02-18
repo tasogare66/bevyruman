@@ -44,6 +44,11 @@ pub struct GameFonts {
     cmn: Handle<Font>,
 }
 
+#[derive(Resource)]
+struct GameTextures {
+    spr0: Handle<TextureAtlas>,
+}
+
 // waveの状態
 #[derive(Resource)]
 pub struct WaveStatus {
@@ -157,7 +162,11 @@ fn main() {
         .run();
 }
 
-fn pre_startup_setup_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn pre_startup_setup_system(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
     // camera
     commands.spawn((Camera2dBundle::default(), MainCamera));
     // add font resource
@@ -165,6 +174,13 @@ fn pre_startup_setup_system(mut commands: Commands, asset_server: Res<AssetServe
         cmn: asset_server.load("MPLUS1Code-Regular.ttf"),
     };
     commands.insert_resource(game_fonts);
+    // sprite
+    let texture_handle = asset_server.load("sprites_000.png");
+    let texture_atlas: TextureAtlas =
+        TextureAtlas::from_grid(texture_handle, Vec2::new(8., 8.), 16, 32, None, None);
+    let spr0 = texture_atlases.add(texture_atlas);
+    let game_texture = GameTextures { spr0: spr0 };
+    commands.insert_resource(game_texture);
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {

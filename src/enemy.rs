@@ -1,4 +1,4 @@
-use crate::{components::*, AppState};
+use crate::{components::*, AppState, GameTextures};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 use std::{f32::consts::PI, time::Duration};
@@ -53,6 +53,7 @@ fn random_circle(st_r: f32, ed_r: f32) -> Vec2 {
 fn enemy_spawn_system(
     mut commands: Commands,
     mut enemy_count: ResMut<EnemyCount>,
+    game_textures: Res<GameTextures>,
     q_player: Query<&Transform, With<Player>>,
 ) {
     let Ok(pl_tf) = q_player.get_single() else {
@@ -62,10 +63,10 @@ fn enemy_spawn_system(
         if enemy_count.count < enemy_count.max {
             let pos = random_circle(100., 600.) + pl_tf.translation.xy();
             let _entity_id = commands
-                .spawn(SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::rgb_u8(222, 184, 135),
-                        custom_size: Some(Vec2::new(8., 8.)),
+                .spawn(SpriteSheetBundle {
+                    texture_atlas: game_textures.spr0.clone(),
+                    sprite: TextureAtlasSprite {
+                        custom_size: Some(Vec2::new(10., 10.)),
                         ..default()
                     },
                     transform: Transform {
