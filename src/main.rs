@@ -78,15 +78,19 @@ fn main() {
             36.0 / 255.0,
             52.0 / 255.0,
         )))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "bevyruman".into(),
-                resolution: (1280f32, 720f32).into(),
-                present_mode: PresentMode::AutoNoVsync, //fps見るため,vsync off
-                ..Default::default()
-            }),
-            ..Default::default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "bevyruman".into(),
+                        resolution: (1280f32, 720f32).into(),
+                        present_mode: PresentMode::AutoNoVsync, //fps見るため,vsync off
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+                .set(ImagePlugin::default_nearest()), //texture別に設定したいけど,やり方分からない
+        )
         .configure_sets(
             Update,
             (
