@@ -45,8 +45,9 @@ pub struct GameFonts {
 }
 
 #[derive(Resource)]
-struct GameTextures {
-    spr0: Handle<TextureAtlas>,
+pub struct GameTextures {
+    spr0_tex: Handle<Image>,
+    spr0_layout: Handle<TextureAtlasLayout>,
 }
 
 // waveの状態
@@ -108,7 +109,7 @@ fn main() {
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
         .add_systems(Update, bevy::window::close_on_esc)
-        .add_state::<AppState>()
+        .init_state::<AppState>()
         //Title
         .add_systems(OnEnter(AppState::Title), title::setup_title)
         .add_systems(
@@ -168,8 +169,8 @@ fn main() {
 
 fn pre_startup_setup_system(
     mut commands: Commands,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     // camera
     commands.spawn((Camera2dBundle::default(), MainCamera));
@@ -180,10 +181,9 @@ fn pre_startup_setup_system(
     commands.insert_resource(game_fonts);
     // sprite
     let texture_handle = asset_server.load("sprites_000.png");
-    let texture_atlas: TextureAtlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(8., 8.), 16, 32, None, None);
-    let spr0 = texture_atlases.add(texture_atlas);
-    let game_texture = GameTextures { spr0: spr0 };
+    let layout = TextureAtlasLayout::from_grid(Vec2::new(8., 8.), 16, 32, None, None);
+    let layout_handle = texture_atlases.add(layout);
+    let game_texture = GameTextures { spr0_tex: texture_handle, spr0_layout: layout_handle };
     commands.insert_resource(game_texture);
 }
 

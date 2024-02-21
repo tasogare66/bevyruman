@@ -64,11 +64,15 @@ fn enemy_spawn_system(
             let pos = random_circle(100., 600.) + pl_tf.translation.xy();
             let _entity_id = commands
                 .spawn(SpriteSheetBundle {
-                    texture_atlas: game_textures.spr0.clone(),
-                    sprite: TextureAtlasSprite {
+                    sprite: Sprite {
                         custom_size: Some(Vec2::new(10., 10.)),
                         ..default()
                     },
+                    atlas: TextureAtlas {
+                        layout: game_textures.spr0_layout.clone(),
+                        index: 0
+                    },
+                    texture: game_textures.spr0_tex.clone(),
                     transform: Transform {
                         translation: pos.extend(5.),
                         ..default()

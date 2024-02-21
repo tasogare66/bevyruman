@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.12.1"
-bevy_egui = "0.24.0"
+bevy = "0.13.0"
+bevy_dylib = "0.13.0"
+bevy_egui = "0.25.0"
 rand = "0.8.5"
 smallvec = { version = "1.6", features = ["const_generics"] } # same as bevy 0.12
 

@@ -66,7 +66,7 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
 }
 
 fn player_input_move_event_system(
-    kb: Res<Input<KeyCode>>,
+    kb: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut query: Query<&mut PhysicalObj, With<Player>>,
 ) {
@@ -76,16 +76,16 @@ fn player_input_move_event_system(
 
     //move
     let mut mov = Vec2::new(0., 0.);
-    mov.x = if kb.pressed(KeyCode::Left) || kb.pressed(KeyCode::A) {
+    mov.x = if kb.pressed(KeyCode::ArrowLeft) || kb.pressed(KeyCode::KeyA) {
         -1.
-    } else if kb.pressed(KeyCode::Right) || kb.pressed(KeyCode::D) {
+    } else if kb.pressed(KeyCode::ArrowRight) || kb.pressed(KeyCode::KeyD) {
         1.
     } else {
         0.
     };
-    mov.y = if kb.pressed(KeyCode::Up) || kb.pressed(KeyCode::W) {
+    mov.y = if kb.pressed(KeyCode::ArrowUp) || kb.pressed(KeyCode::KeyW) {
         1.
-    } else if kb.pressed(KeyCode::Down) || kb.pressed(KeyCode::S) {
+    } else if kb.pressed(KeyCode::ArrowDown) || kb.pressed(KeyCode::KeyS) {
         -1.
     } else {
         0.
@@ -110,8 +110,8 @@ fn calc_screen_to_world_position(
 
 fn player_input_shot_event_system(
     mut commands: Commands,
-    kb: Res<Input<KeyCode>>,
-    mb: Res<Input<MouseButton>>,
+    kb: Res<ButtonInput<KeyCode>>,
+    mb: Res<ButtonInput<MouseButton>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     query: Query<&Transform, With<Player>>,
@@ -130,7 +130,7 @@ fn player_input_shot_event_system(
     };
 
     //shot
-    if kb.pressed(KeyCode::Z) || mb.pressed(MouseButton::Left) {
+    if kb.pressed(KeyCode::KeyZ) || mb.pressed(MouseButton::Left) {
         let cur_world_pos = calc_screen_to_world_position(cur_pos, camera, camera_transform);
         let pos = tf.translation.xy();
         let Some(dir) = (cur_world_pos - pos).try_normalize() else {
