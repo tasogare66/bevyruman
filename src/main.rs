@@ -19,6 +19,8 @@ mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
 mod title;
+mod levelup;
+mod shop;
 mod ui_game;
 
 const TILE_SIZE: usize = 10;
@@ -135,6 +137,20 @@ fn main() {
             title::title_system.run_if(in_state(AppState::Title)),
         )
         .add_systems(OnExit(AppState::Title), title::cleanup_title)
+        //LevelUp
+        .add_systems(OnEnter(AppState::LevelUp), levelup::setup_levelup)
+        .add_systems(
+            Update,
+            levelup::levelup_system.run_if(in_state(AppState::LevelUp)),
+        )
+        .add_systems(OnExit(AppState::LevelUp), levelup::cleanup_levelup)
+        //Shop
+        .add_systems(OnEnter(AppState::Shop), shop::setup_shop)
+        .add_systems(
+            Update,
+            shop::shop_system.run_if(in_state(AppState::Shop)),
+        )
+        .add_systems(OnExit(AppState::Shop), shop::cleanup_shop)
         //InGame
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_plugins((UiGamePlugin,))
@@ -534,7 +550,7 @@ fn setup_game_system(game_config: Res<GameConfig>, mut wave_status: ResMut<WaveS
     *wave_status = WaveStatus{..default()}; //clear
     // for debug,time短い設定
     if cfg!(debug_assertions) && game_config.dbg_least_time {
-        wave_status.timer = Timer::from_seconds(10.0, TimerMode::Once);
+        wave_status.timer = Timer::from_seconds(5.0, TimerMode::Once);
     }
 }
 

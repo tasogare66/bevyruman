@@ -7,11 +7,11 @@ const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
 #[derive(Resource)]
-pub struct UITitleData {
+pub struct UIShopData {
     button_entity: Entity,
 }
 
-pub fn setup_title(mut commands: Commands) {
+pub fn setup_shop(mut commands: Commands) {
     let button_entity = commands
         .spawn(NodeBundle {
             style: Style {
@@ -41,7 +41,7 @@ pub fn setup_title(mut commands: Commands) {
                 })
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Play",
+                        "Shop",
                         TextStyle {
                             font_size: 40.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
@@ -51,10 +51,10 @@ pub fn setup_title(mut commands: Commands) {
                 });
         })
         .id();
-    commands.insert_resource(UITitleData { button_entity });
+    commands.insert_resource(UIShopData { button_entity });
 }
 
-pub fn title_system(
+pub fn shop_system(
     mut next_state: ResMut<NextState<AppState>>,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
@@ -77,6 +77,6 @@ pub fn title_system(
     }
 }
 
-pub fn cleanup_title(mut commands: Commands, menu_data: Res<UITitleData>) {
+pub fn cleanup_shop(mut commands: Commands, menu_data: Res<UIShopData>) {
     commands.entity(menu_data.button_entity).despawn_recursive();
 }

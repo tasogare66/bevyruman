@@ -7,11 +7,11 @@ const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
 #[derive(Resource)]
-pub struct UITitleData {
+pub struct UILevelupData {
     button_entity: Entity,
 }
 
-pub fn setup_title(mut commands: Commands) {
+pub fn setup_levelup(mut commands: Commands) {
     let button_entity = commands
         .spawn(NodeBundle {
             style: Style {
@@ -41,7 +41,7 @@ pub fn setup_title(mut commands: Commands) {
                 })
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Play",
+                        "Levelup",
                         TextStyle {
                             font_size: 40.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
@@ -51,10 +51,10 @@ pub fn setup_title(mut commands: Commands) {
                 });
         })
         .id();
-    commands.insert_resource(UITitleData { button_entity });
+    commands.insert_resource(UILevelupData { button_entity });
 }
 
-pub fn title_system(
+pub fn levelup_system(
     mut next_state: ResMut<NextState<AppState>>,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
@@ -65,7 +65,7 @@ pub fn title_system(
         match *interaction {
             Interaction::Pressed => {
                 *color = PRESSED_BUTTON.into();
-                next_state.set(AppState::InGame);
+                next_state.set(AppState::Shop);
             }
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
@@ -77,6 +77,6 @@ pub fn title_system(
     }
 }
 
-pub fn cleanup_title(mut commands: Commands, menu_data: Res<UITitleData>) {
+pub fn cleanup_levelup(mut commands: Commands, menu_data: Res<UILevelupData>) {
     commands.entity(menu_data.button_entity).despawn_recursive();
 }
