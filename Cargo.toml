@@ -11,6 +11,8 @@ bevy_dylib = "0.13.0"
 bevy_egui = "0.25.0"
 rand = "0.8.5"
 smallvec = { version = "1.6", features = ["const_generics"] } # same as bevy 0.12
+ron = "0.8"
+serde = { version = "1", features = ["derive"] }
 
 [workspace]
 resolver = "2"

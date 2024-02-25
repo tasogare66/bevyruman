@@ -8,6 +8,7 @@ use show_fps::ShowFpsPlugin;
 use sparse_grid::{Aabb, SparseGrid2d};
 use std::time::Duration;
 use ui_game::UiGamePlugin;
+use serde::{Deserialize, Serialize};
 
 mod camera;
 mod components;
@@ -48,6 +49,22 @@ pub struct GameFonts {
 pub struct GameTextures {
     spr0_tex: Handle<Image>,
     spr0_layout: Handle<TextureAtlasLayout>,
+}
+
+#[derive(Resource, Debug, Deserialize, Serialize)]
+pub struct GameConfig {
+    dbg_show_collision: bool,
+    dbg_least_time: bool, //ゲームすぐに終了
+    float: f32,
+}
+impl Default for GameConfig {
+    fn default() -> Self {
+        Self {
+            dbg_show_collision: false,
+            dbg_least_time: true,
+            float: 0.,
+        }
+    }
 }
 
 // waveの状態
@@ -105,6 +122,7 @@ fn main() {
         .insert_resource(SHM {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
+        .insert_resource(GameConfig { ..default() })
         .insert_resource(WaveStatus { ..default() })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
@@ -120,6 +138,8 @@ fn main() {
         //InGame
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_plugins((UiGamePlugin,))
+        .add_systems(OnEnter(AppState::InGame), setup_game_system)
+        .add_systems(OnExit(AppState::InGame), cleanup_game_system)
         .add_systems(
             Update,
             (physical_obj_pre_proc_system, shm_pre_proc_system)
@@ -183,8 +203,15 @@ fn pre_startup_setup_system(
     let texture_handle = asset_server.load("sprites_000.png");
     let layout = TextureAtlasLayout::from_grid(Vec2::new(8., 8.), 16, 32, None, None);
     let layout_handle = texture_atlases.add(layout);
-    let game_texture = GameTextures { spr0_tex: texture_handle, spr0_layout: layout_handle };
+    let game_texture = GameTextures {
+        spr0_tex: texture_handle,
+        spr0_layout: layout_handle,
+    };
     commands.insert_resource(game_texture);
+
+    // FIXME:ron test
+    let x: GameConfig = ron::from_str("(dbg_show_collision: true, dbg_least_time: true, float: 1.23)").unwrap();
+    println!("RON: {}", ron::to_string(&x).unwrap());
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {
@@ -500,6 +527,20 @@ fn update_entity_existence_system(
             }
         }
     }
+}
+
+// InGame初期化処理
+fn setup_game_system(game_config: Res<GameConfig>, mut wave_status: ResMut<WaveStatus>,) {
+    *wave_status = WaveStatus{..default()}; //clear
+    // for debug,time短い設定
+    if cfg!(debug_assertions) && game_config.dbg_least_time {
+        wave_status.timer = Timer::from_seconds(10.0, TimerMode::Once);
+    }
+}
+
+// InGame終了処理
+fn cleanup_game_system() {
+    //
 }
 
 fn update_wave_system(

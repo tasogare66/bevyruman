@@ -70,7 +70,7 @@ fn enemy_spawn_system(
                     },
                     atlas: TextureAtlas {
                         layout: game_textures.spr0_layout.clone(),
-                        index: 0
+                        index: 0,
                     },
                     texture: game_textures.spr0_tex.clone(),
                     transform: Transform {

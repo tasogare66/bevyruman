@@ -1088,6 +1088,8 @@ dependencies = [
  "bevy_dylib",
  "bevy_egui",
  "rand",
+ "ron",
+ "serde",
  "smallvec",
 ]
 
