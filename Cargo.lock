@@ -1091,6 +1091,7 @@ dependencies = [
  "ron",
  "serde",
  "smallvec",
+ "thiserror",
 ]
 
 [[package]]

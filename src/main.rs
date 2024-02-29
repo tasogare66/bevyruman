@@ -3,24 +3,26 @@ use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
 use dw_gui::DwGuiPlugin;
 use enemy::{EnemyCount, EnemyPlugin};
 use player::PlayerPlugin;
+use ron_asset::RonAssetPlugin;
+use serde::{Deserialize, Serialize};
 use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
 use sparse_grid::{Aabb, SparseGrid2d};
 use std::time::Duration;
 use ui_game::UiGamePlugin;
-use serde::{Deserialize, Serialize};
 
 mod camera;
 mod components;
 mod dw_gui;
 mod enemy;
+mod levelup;
 mod player;
+mod ron_asset;
+mod shop;
 mod show_debug;
 mod show_fps;
 pub mod sparse_grid;
 mod title;
-mod levelup;
-mod shop;
 mod ui_game;
 
 const TILE_SIZE: usize = 10;
@@ -82,6 +84,14 @@ impl Default for WaveStatus {
     }
 }
 
+#[derive(serde::Deserialize, Asset, TypePath)]
+struct GameLevel {
+    positions: Vec<[f32; 3]>,
+}
+
+#[derive(Resource)]
+struct GameLevelHandle(Handle<GameLevel>);
+
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum AppState {
     #[default]
@@ -111,6 +121,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()), //texture別に設定したいけど,やり方分からない
         )
+        .add_plugins(RonAssetPlugin::<GameLevel>::new(&["level.ron"]))
         .configure_sets(
             Update,
             (
@@ -146,10 +157,7 @@ fn main() {
         .add_systems(OnExit(AppState::LevelUp), levelup::cleanup_levelup)
         //Shop
         .add_systems(OnEnter(AppState::Shop), shop::setup_shop)
-        .add_systems(
-            Update,
-            shop::shop_system.run_if(in_state(AppState::Shop)),
-        )
+        .add_systems(Update, shop::shop_system.run_if(in_state(AppState::Shop)))
         .add_systems(OnExit(AppState::Shop), shop::cleanup_shop)
         //InGame
         .add_plugins((PlayerPlugin, EnemyPlugin))
@@ -226,8 +234,11 @@ fn pre_startup_setup_system(
     commands.insert_resource(game_texture);
 
     // FIXME:ron test
-    let x: GameConfig = ron::from_str("(dbg_show_collision: true, dbg_least_time: true, float: 1.23)").unwrap();
-    println!("RON: {}", ron::to_string(&x).unwrap());
+    // let x: GameConfig =
+    //     ron::from_str("(dbg_show_collision: true, dbg_least_time: true, float: 1.23)").unwrap();
+    // println!("RON: {}", ron::to_string(&x).unwrap());
+    let level = GameLevelHandle(asset_server.load("game.level.ron"));
+    commands.insert_resource(level);
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {
@@ -546,8 +557,9 @@ fn update_entity_existence_system(
 }
 
 // InGame初期化処理
-fn setup_game_system(game_config: Res<GameConfig>, mut wave_status: ResMut<WaveStatus>,) {
-    *wave_status = WaveStatus{..default()}; //clear
+fn setup_game_system(game_config: Res<GameConfig>, mut wave_status: ResMut<WaveStatus>) {
+    // clear
+    *wave_status = WaveStatus { ..default() };
     // for debug,time短い設定
     if cfg!(debug_assertions) && game_config.dbg_least_time {
         wave_status.timer = Timer::from_seconds(5.0, TimerMode::Once);
