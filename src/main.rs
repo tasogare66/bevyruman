@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::resources::*;
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
 use dw_gui::DwGuiPlugin;
 use enemy::{EnemyCount, EnemyPlugin};
@@ -17,6 +18,7 @@ mod dw_gui;
 mod enemy;
 mod levelup;
 mod player;
+mod resources;
 mod ron_asset;
 mod shop;
 mod show_debug;
@@ -83,14 +85,6 @@ impl Default for WaveStatus {
         }
     }
 }
-
-#[derive(serde::Deserialize, Asset, TypePath)]
-struct GameLevel {
-    positions: Vec<[f32; 3]>,
-}
-
-#[derive(Resource)]
-struct GameLevelHandle(Handle<GameLevel>);
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum AppState {
