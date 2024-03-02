@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::{components::*, GameConfig};
 use bevy::prelude::*;
 
 pub struct ShowDebugPlugin;
@@ -25,11 +25,18 @@ fn show_bg_gizmo_system(mut gizmos: Gizmos) {
         .segments(64);
 }
 
-fn show_colli_gizmo_system(mut gizmos: Gizmos, query: Query<(&Transform, &CollideCircle)>) {
-    for (transform, colli) in query.iter() {
-        let pos = transform.translation.xy();
-        gizmos
-            .circle_2d(pos, colli.radius, Color::ORANGE)
-            .segments(16);
+fn show_colli_gizmo_system(
+    mut gizmos: Gizmos,
+    query: Query<(&Transform, &CollideCircle)>,
+    game_config: Res<GameConfig>,
+) {
+    // show collision
+    if cfg!(debug_assertions) && game_config.dbg_show_collision {
+        for (transform, colli) in query.iter() {
+            let pos = transform.translation.xy();
+            gizmos
+                .circle_2d(pos, colli.radius, Color::ORANGE)
+                .segments(16);
+        }
     }
 }

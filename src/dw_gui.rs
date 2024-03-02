@@ -1,4 +1,4 @@
-use crate::enemy::EnemyCount;
+use crate::{enemy::EnemyCount, GameConfig};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
@@ -13,8 +13,23 @@ impl Plugin for DwGuiPlugin {
     }
 }
 
-fn common_debug_ui_system(mut contexts: EguiContexts, enemy_count: Res<EnemyCount>) {
-    egui::Window::new("Debug").show(contexts.ctx_mut(), |ui| {
+fn common_debug_ui_system(
+    mut contexts: EguiContexts,
+    enemy_count: Res<EnemyCount>,
+    mut game_config: ResMut<GameConfig>,
+) {
+    egui::Window::new("debug").show(contexts.ctx_mut(), |ui| {
         ui.label(format!("enemy count:{0}", enemy_count.count));
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut game_config.dbg_show_collision, "show_collision");
+            ui.checkbox(&mut game_config.dbg_least_time, "least time");
+        });
+        if ui.button("Reset").clicked() {
+            *game_config = GameConfig::default();
+        }
+        ui.horizontal(|ui| {
+            if ui.button("Load").clicked() {}
+            if ui.button("Save").clicked() {}
+        });
     });
 }
