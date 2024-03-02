@@ -211,7 +211,16 @@ fn pre_startup_setup_system(
     asset_server: Res<AssetServer>,
 ) {
     // camera
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+    commands.spawn((
+        Camera2dBundle {
+            camera: Camera {
+                hdr: true, // 1. HDR is required for bloom
+                ..default()
+            },
+            ..default()
+        },
+        MainCamera,
+    ));
     // add font resource
     let game_fonts = GameFonts {
         cmn: asset_server.load("MPLUS1Code-Regular.ttf"),

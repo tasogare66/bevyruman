@@ -1,5 +1,7 @@
 use crate::{enemy::EnemyCount, GameConfig};
 use bevy::prelude::*;
+use bevy::render::view::screenshot::ScreenshotManager;
+use bevy::window::PrimaryWindow;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
 pub struct DwGuiPlugin;
@@ -17,9 +19,21 @@ fn common_debug_ui_system(
     mut contexts: EguiContexts,
     enemy_count: Res<EnemyCount>,
     mut game_config: ResMut<GameConfig>,
+    //screenshot
+    main_window: Query<Entity, With<PrimaryWindow>>,
+    mut screenshot_manager: ResMut<ScreenshotManager>,
+    mut counter: Local<u32>,
 ) {
     egui::Window::new("debug").show(contexts.ctx_mut(), |ui| {
         ui.label(format!("enemy count:{0}", enemy_count.count));
+        if ui.button("screenshot").clicked() {
+            //FIXME:screenshot取れない
+            let path = format!("./ram/screenshot-{}.png", *counter);
+            *counter += 1;
+            screenshot_manager
+                .save_screenshot_to_disk(main_window.single(), path)
+                .unwrap();
+        }
         ui.horizontal(|ui| {
             ui.checkbox(&mut game_config.dbg_show_collision, "show_collision");
             ui.checkbox(&mut game_config.dbg_least_time, "least time");
