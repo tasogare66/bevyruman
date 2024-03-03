@@ -16,6 +16,7 @@ mod camera;
 mod components;
 mod dw_gui;
 mod enemy;
+mod inputmng;
 mod levelup;
 mod player;
 mod resources;
@@ -133,7 +134,9 @@ fn main() {
         .insert_resource(WaveStatus { ..default() })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
+        .add_systems(Startup, inputmng::startup_input_mng_system)
         .add_systems(Update, bevy::window::close_on_esc)
+        .add_systems(Update, inputmng::update_input_mng_system)
         .init_state::<AppState>()
         //Title
         .add_systems(OnEnter(AppState::Title), title::setup_title)

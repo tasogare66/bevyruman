@@ -1,4 +1,4 @@
-use crate::{components::*, AppState};
+use crate::{components::*, inputmng::InputMngBtn, AppState};
 use bevy::{prelude::*, window::PrimaryWindow};
 
 #[derive(Resource)]
@@ -66,7 +66,7 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
 }
 
 fn player_input_move_event_system(
-    kb: Res<ButtonInput<KeyCode>>,
+    input: Res<ButtonInput<InputMngBtn>>,
     time: Res<Time>,
     mut query: Query<&mut PhysicalObj, With<Player>>,
 ) {
@@ -76,16 +76,16 @@ fn player_input_move_event_system(
 
     //move
     let mut mov = Vec2::new(0., 0.);
-    mov.x = if kb.pressed(KeyCode::ArrowLeft) || kb.pressed(KeyCode::KeyA) {
+    mov.x = if input.pressed(InputMngBtn::Left) {
         -1.
-    } else if kb.pressed(KeyCode::ArrowRight) || kb.pressed(KeyCode::KeyD) {
+    } else if input.pressed(InputMngBtn::Right) {
         1.
     } else {
         0.
     };
-    mov.y = if kb.pressed(KeyCode::ArrowUp) || kb.pressed(KeyCode::KeyW) {
+    mov.y = if input.pressed(InputMngBtn::Up) {
         1.
-    } else if kb.pressed(KeyCode::ArrowDown) || kb.pressed(KeyCode::KeyS) {
+    } else if input.pressed(InputMngBtn::Down) {
         -1.
     } else {
         0.
@@ -110,8 +110,7 @@ fn calc_screen_to_world_position(
 
 fn player_input_shot_event_system(
     mut commands: Commands,
-    kb: Res<ButtonInput<KeyCode>>,
-    mb: Res<ButtonInput<MouseButton>>,
+    input: Res<ButtonInput<InputMngBtn>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     query: Query<&Transform, With<Player>>,
@@ -130,7 +129,7 @@ fn player_input_shot_event_system(
     };
 
     //shot
-    if kb.pressed(KeyCode::KeyZ) || mb.pressed(MouseButton::Left) {
+    if input.pressed(InputMngBtn::Shot) {
         let cur_world_pos = calc_screen_to_world_position(cur_pos, camera, camera_transform);
         let pos = tf.translation.xy();
         let Some(dir) = (cur_world_pos - pos).try_normalize() else {
