@@ -1087,6 +1087,7 @@ dependencies = [
  "bevy",
  "bevy_dylib",
  "bevy_egui",
+ "moonshine-save",
  "rand",
  "ron",
  "serde",
@@ -2516,6 +2517,22 @@ checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
  "simd-adler32",
+]
+
+[[package]]
+name = "moonshine-save"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c2911d10ee583a9b1b0afdf4acaa9664b88e9b4bafc4127ced46c06aa471c43"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_hierarchy",
+ "bevy_reflect",
+ "bevy_scene",
+ "bevy_utils",
+ "ron",
+ "serde",
 ]
 
 [[package]]

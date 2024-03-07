@@ -17,13 +17,15 @@ impl Plugin for DwGuiPlugin {
 
 fn common_debug_ui_system(
     mut contexts: EguiContexts,
+    mut commands: Commands,
     enemy_count: Res<EnemyCount>,
-    mut game_config: ResMut<GameConfig>,
+    mut game_config_query: Query<&mut GameConfig>,
     //screenshot
     main_window: Query<Entity, With<PrimaryWindow>>,
     mut screenshot_manager: ResMut<ScreenshotManager>,
     mut counter: Local<u32>,
 ) {
+    let mut game_config = game_config_query.get_single_mut().unwrap();
     egui::Window::new("debug").show(contexts.ctx_mut(), |ui| {
         ui.label(format!("enemy count:{0}", enemy_count.count));
         if ui.button("screenshot").clicked() {
@@ -42,8 +44,12 @@ fn common_debug_ui_system(
             *game_config = GameConfig::default();
         }
         ui.horizontal(|ui| {
-            if ui.button("Load").clicked() {}
-            if ui.button("Save").clicked() {}
+            if ui.button("Load").clicked() {
+                commands.insert_resource(crate::LoadConfigRequest);
+            }
+            if ui.button("Save").clicked() {
+                commands.insert_resource(crate::SaveConfigRequest);
+            }
         });
     });
 }

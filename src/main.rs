@@ -3,12 +3,13 @@ use crate::resources::*;
 use bevy::{prelude::*, time::common_conditions::on_timer, window::PresentMode};
 use dw_gui::DwGuiPlugin;
 use enemy::{EnemyCount, EnemyPlugin};
+use moonshine_save::prelude::*;
 use player::PlayerPlugin;
 use ron_asset::RonAssetPlugin;
-use serde::{Deserialize, Serialize};
 use show_debug::ShowDebugPlugin;
 use show_fps::ShowFpsPlugin;
 use sparse_grid::{Aabb, SparseGrid2d};
+use std::path::Path;
 use std::time::Duration;
 use ui_game::UiGamePlugin;
 
@@ -29,6 +30,7 @@ mod title;
 mod ui_game;
 
 const TILE_SIZE: usize = 10;
+const SAVE_CONFIG_PATH: &str = "ram/config.ron";
 
 #[derive(Resource)]
 struct PhysicsResource {
@@ -58,7 +60,8 @@ pub struct GameTextures {
     spr0_layout: Handle<TextureAtlasLayout>,
 }
 
-#[derive(Resource, Debug, Deserialize, Serialize)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct GameConfig {
     dbg_show_collision: bool,
     dbg_least_time: bool, //ゲームすぐに終了
@@ -68,9 +71,32 @@ impl Default for GameConfig {
     fn default() -> Self {
         Self {
             dbg_show_collision: false,
-            dbg_least_time: true,
+            dbg_least_time: false,
             float: 0.,
         }
+    }
+}
+#[derive(Bundle)]
+struct GameConfigBundle {
+    game_config: GameConfig,
+    save: Save,
+}
+
+/// A resource which is used to invoke the save system.
+#[derive(Resource)]
+struct SaveConfigRequest;
+impl SaveIntoFileRequest for SaveConfigRequest {
+    fn path(&self) -> &Path {
+        SAVE_CONFIG_PATH.as_ref()
+    }
+}
+
+/// A resource which is used to invoke the load system.
+#[derive(Resource)]
+struct LoadConfigRequest;
+impl LoadFromFileRequest for LoadConfigRequest {
+    fn path(&self) -> &Path {
+        SAVE_CONFIG_PATH.as_ref()
     }
 }
 
@@ -117,6 +143,15 @@ fn main() {
                 .set(ImagePlugin::default_nearest()), //texture別に設定したいけど,やり方分からない
         )
         .add_plugins(RonAssetPlugin::<GameLevel>::new(&["level.ron"]))
+        //save load
+        .add_plugins(SavePlugin)
+        .register_type::<GameConfig>()
+        .add_systems(
+            PreUpdate,
+            //save_default().into_file_on_request::<SaveConfigRequest>(),
+            save::<With<GameConfig>>().into_file_on_request::<SaveConfigRequest>(),
+        )
+        .add_systems(PreUpdate, load_from_file_on_request::<LoadConfigRequest>())
         .configure_sets(
             Update,
             (
@@ -130,7 +165,6 @@ fn main() {
         .insert_resource(SHM {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
-        .insert_resource(GameConfig { ..default() })
         .insert_resource(WaveStatus { ..default() })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
@@ -239,12 +273,14 @@ fn pre_startup_setup_system(
     };
     commands.insert_resource(game_texture);
 
-    // FIXME:ron test
-    // let x: GameConfig =
-    //     ron::from_str("(dbg_show_collision: true, dbg_least_time: true, float: 1.23)").unwrap();
-    // println!("RON: {}", ron::to_string(&x).unwrap());
     let level = GameLevelHandle(asset_server.load("game.level.ron"));
     commands.insert_resource(level);
+
+    commands.spawn((GameConfigBundle {
+        game_config: GameConfig { ..default() },
+        save: Save,
+    },));
+    commands.insert_resource(crate::LoadConfigRequest);
 }
 
 fn physical_obj_pre_proc_system(mut query: Query<(&Transform, &mut PhysicalObj)>) {
@@ -563,11 +599,11 @@ fn update_entity_existence_system(
 }
 
 // InGame初期化処理
-fn setup_game_system(game_config: Res<GameConfig>, mut wave_status: ResMut<WaveStatus>) {
+fn setup_game_system(game_config: Query<&GameConfig>, mut wave_status: ResMut<WaveStatus>) {
     // clear
     *wave_status = WaveStatus { ..default() };
     // for debug,time短い設定
-    if cfg!(debug_assertions) && game_config.dbg_least_time {
+    if cfg!(debug_assertions) && game_config.get_single().unwrap().dbg_least_time {
         wave_status.timer = Timer::from_seconds(5.0, TimerMode::Once);
     }
 }
