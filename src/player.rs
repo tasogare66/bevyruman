@@ -12,7 +12,6 @@ impl Default for PlayerState {
 }
 
 pub struct PlayerPlugin;
-
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerState::default())
@@ -59,6 +58,9 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
             .insert(CollideCircle {
                 radius: 3.,
                 ..default()
+            })
+            .with_children(|parent| {
+                parent.spawn(Weapon { ..default() }).insert(ForPlayer);
             });
 
         player_state.alive = true; //spawned
@@ -110,10 +112,12 @@ fn calc_screen_to_world_position(
 
 fn player_input_shot_event_system(
     mut commands: Commands,
+    time: Res<Time>,
     input: Res<ButtonInput<InputMngBtn>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     query: Query<&Transform, With<Player>>,
+    mut weapon_query: Query<&mut Weapon, With<ForPlayer>>,
 ) {
     let Ok(tf) = query.get_single() else {
         return;
@@ -166,6 +170,11 @@ fn player_input_shot_event_system(
                 .insert(HitCircle { ..default() })
                 .insert(FromPlayer);
         };
-        spawn_bullet(dir * 4.);
+        for mut weapon in weapon_query.iter_mut() {
+            weapon.repeat.tick(time.delta());
+            if weapon.repeat.finished() {
+                spawn_bullet(dir * 4.);
+            }
+        }
     }
 }

@@ -89,10 +89,13 @@ impl Default for UniformVelocityBundle {
 pub struct Player;
 
 #[derive(Component)]
+pub struct Enemy;
+
+#[derive(Component)]
 pub struct FromPlayer;
 
 #[derive(Component)]
-pub struct Enemy;
+pub struct ForPlayer;
 
 #[derive(Component)]
 pub struct DamageSource {
@@ -101,5 +104,17 @@ pub struct DamageSource {
 impl Default for DamageSource {
     fn default() -> Self {
         Self { damage: 1. }
+    }
+}
+
+#[derive(Component)]
+pub struct Weapon {
+    pub repeat: Timer,
+}
+impl Default for Weapon {
+    fn default() -> Self {
+        Self {
+            repeat: Timer::from_seconds(1. / 60. * 4., TimerMode::Repeating),
+        }
     }
 }
