@@ -6,12 +6,16 @@ pub struct UiGamePlugin;
 
 impl Plugin for UiGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), setup_ui_game)
-            .add_systems(
-                Update,
-                (update_ui_game_system,).run_if(in_state(AppState::InGame)),
-            );
+        app.add_systems(
+            Update,
+            (update_ui_game_system,).run_if(in_state(AppState::InGame)),
+        );
     }
+}
+
+#[derive(Resource)]
+pub struct UIGameData {
+    button_entity: Entity,
 }
 
 #[derive(Component)]
@@ -20,8 +24,8 @@ pub struct WaveText;
 #[derive(Component)]
 struct TimerText;
 
-fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
-    commands
+pub fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
+    let button_entity = commands
         .spawn(NodeBundle {
             style: Style {
                 width: Val::Percent(100.0),
@@ -76,11 +80,19 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
                 }),
                 TimerText,
             ));
-        });
+        })
+        .id();
+    commands.insert_resource(UIGameData { button_entity }); //上書きされる
+}
+
+pub fn cleanup_ui_game_system(mut commands: Commands, ui_game_data: Res<UIGameData>) {
+    commands
+        .entity(ui_game_data.button_entity)
+        .despawn_recursive();
 }
 
 // waveの開始
-pub fn setup_ui_game_system(
+pub fn update_ui_game_wave_system(
     game_sequence: Res<GameSequence>,
     mut query: Query<&mut Text, With<WaveText>>,
 ) {

@@ -204,7 +204,10 @@ fn main() {
             Update,
             levelup::levelup_system.run_if(in_state(AppState::LevelUp)),
         )
-        .add_systems(OnExit(AppState::LevelUp), levelup::cleanup_levelup)
+        .add_systems(
+            OnExit(AppState::LevelUp),
+            (levelup::cleanup_levelup, ui_game::cleanup_ui_game_system),
+        )
         //Shop
         .add_systems(OnEnter(AppState::Shop), shop::setup_shop)
         .add_systems(Update, shop::shop_system.run_if(in_state(AppState::Shop)))
@@ -214,7 +217,12 @@ fn main() {
         .add_plugins((UiGamePlugin,))
         .add_systems(
             OnEnter(AppState::InGame),
-            (setup_in_game_system, ui_game::setup_ui_game_system).chain(),
+            (
+                setup_in_game_system,
+                ui_game::setup_ui_game,              //ui作る
+                ui_game::update_ui_game_wave_system, //wave表示更新
+            )
+                .chain(),
         )
         .add_systems(OnExit(AppState::InGame), cleanup_in_game_system)
         .add_systems(
