@@ -100,6 +100,21 @@ impl LoadFromFileRequest for LoadConfigRequest {
     }
 }
 
+// Gameシーケンス
+#[derive(Resource)]
+pub struct GameSequence {
+    started: bool,
+    wave_no: u32,
+}
+impl Default for GameSequence {
+    fn default() -> Self {
+        Self {
+            started: false,
+            wave_no: 0,
+        }
+    }
+}
+
 // waveの状態
 #[derive(Resource)]
 pub struct WaveStatus {
@@ -165,6 +180,7 @@ fn main() {
         .insert_resource(SHM {
             sg2: SparseGrid2d::<TILE_SIZE>::default(),
         })
+        .insert_resource(GameSequence { ..default() })
         .insert_resource(WaveStatus { ..default() })
         .add_plugins((ShowDebugPlugin, ShowFpsPlugin, DwGuiPlugin))
         .add_systems(PreStartup, pre_startup_setup_system)
@@ -178,7 +194,10 @@ fn main() {
             Update,
             title::title_system.run_if(in_state(AppState::Title)),
         )
-        .add_systems(OnExit(AppState::Title), title::cleanup_title)
+        .add_systems(
+            OnExit(AppState::Title),
+            (title::cleanup_title, setup_game_sequence_system),
+        )
         //LevelUp
         .add_systems(OnEnter(AppState::LevelUp), levelup::setup_levelup)
         .add_systems(
@@ -193,8 +212,11 @@ fn main() {
         //InGame
         .add_plugins((PlayerPlugin, EnemyPlugin))
         .add_plugins((UiGamePlugin,))
-        .add_systems(OnEnter(AppState::InGame), setup_game_system)
-        .add_systems(OnExit(AppState::InGame), cleanup_game_system)
+        .add_systems(
+            OnEnter(AppState::InGame),
+            (setup_in_game_system, ui_game::setup_ui_game_system).chain(),
+        )
+        .add_systems(OnExit(AppState::InGame), cleanup_in_game_system)
         .add_systems(
             Update,
             (physical_obj_pre_proc_system, shm_pre_proc_system)
@@ -598,8 +620,24 @@ fn update_entity_existence_system(
     }
 }
 
+// GameSequence初期化処理
+fn setup_game_sequence_system(mut game_sequence: ResMut<GameSequence>) {
+    // clear
+    *game_sequence = GameSequence { ..default() };
+}
+
 // InGame初期化処理
-fn setup_game_system(game_config: Query<&GameConfig>, mut wave_status: ResMut<WaveStatus>) {
+fn setup_in_game_system(
+    game_config: Query<&GameConfig>,
+    mut game_sequence: ResMut<GameSequence>,
+    mut wave_status: ResMut<WaveStatus>,
+) {
+    // next wave
+    if game_sequence.started {
+        game_sequence.wave_no += 1;
+    } else {
+        game_sequence.started = true;
+    }
     // clear
     *wave_status = WaveStatus { ..default() };
     // for debug,time短い設定
@@ -609,7 +647,7 @@ fn setup_game_system(game_config: Query<&GameConfig>, mut wave_status: ResMut<Wa
 }
 
 // InGame終了処理
-fn cleanup_game_system() {
+fn cleanup_in_game_system() {
     //
 }
 

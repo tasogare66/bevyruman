@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{AppState, GameFonts, WaveStatus};
+use crate::{AppState, GameFonts, GameSequence, WaveStatus};
 
 pub struct UiGamePlugin;
 
@@ -13,6 +13,9 @@ impl Plugin for UiGamePlugin {
             );
     }
 }
+
+#[derive(Component)]
+pub struct WaveText;
 
 #[derive(Component)]
 struct TimerText;
@@ -32,6 +35,25 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
         })
         .with_children(|parent| {
             parent.spawn((
+                TextBundle::from_section(
+                    "WAVE 1",
+                    TextStyle {
+                        font: font.cmn.clone(),
+                        font_size: 24.0,
+                        ..default()
+                    },
+                )
+                .with_text_justify(JustifyText::Center)
+                .with_style(Style {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(4.0),
+                    ..default()
+                }),
+                WaveText,
+            ));
+        })
+        .with_children(|parent| {
+            parent.spawn((
                 // Create a TextBundle that has a Text with a single section.
                 TextBundle::from_section(
                     // Accepts a `String` or any type that converts into a `String`, such as `&str`
@@ -47,7 +69,7 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
                 // Set the style of the TextBundle itself.
                 .with_style(Style {
                     position_type: PositionType::Absolute,
-                    top: Val::Px(5.0),
+                    top: Val::Px(28.0),
                     //left: Val::Percent(50.0),
                     //justify_content: JustifyContent::Center,
                     ..default()
@@ -55,6 +77,17 @@ fn setup_ui_game(mut commands: Commands, font: Res<GameFonts>) {
                 TimerText,
             ));
         });
+}
+
+// waveの開始
+pub fn setup_ui_game_system(
+    game_sequence: Res<GameSequence>,
+    mut query: Query<&mut Text, With<WaveText>>,
+) {
+    for mut text in &mut query {
+        let w = game_sequence.wave_no + 1;
+        text.sections[0].value = format!("WAVE {w}");
+    }
 }
 
 fn update_ui_game_system(
