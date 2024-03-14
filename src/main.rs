@@ -553,7 +553,7 @@ fn bullet_vs_enemy_system(
                 if dmg0.damage <= 0. {
                     break;
                 }
-                if health1.0 <= 0. {
+                if health1.hp <= 0. {
                     continue;
                 }
                 if intersect_circle_vs_circle(
@@ -562,8 +562,8 @@ fn bullet_vs_enemy_system(
                     tf1.translation.xy(),
                     colli1.radius,
                 ) {
-                    let health = health1.0;
-                    health1.0 -= dmg0.damage;
+                    let health = health1.hp;
+                    health1.hp -= dmg0.damage;
                     dmg0.damage -= health;
                 }
             }
@@ -607,7 +607,7 @@ fn update_entity_existence_system(
         }
         // 体力
         if let Some(health) = health {
-            if health.0 <= 0. {
+            if health.hp <= 0. {
                 commands.entity(entity).despawn();
                 if enemy.is_some() {
                     enemy_count.count -= 1;

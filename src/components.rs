@@ -65,7 +65,19 @@ pub struct Lifetime(pub Timer);
 
 // 体力,0でdespawn
 #[derive(Component)]
-pub struct Health(pub f32);
+pub struct Health {
+    pub hp: f32,
+    pub max: f32,
+}
+impl Health {
+    pub fn from_max(max: f32) -> Self {
+        assert!(max > 0.);
+        Self { hp: max, max: max }
+    }
+    pub fn get_ratio(&self) -> f32 {
+        self.hp / self.max
+    }
+}
 
 // 等速直線運動
 #[derive(Component)]

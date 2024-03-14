@@ -59,6 +59,7 @@ fn player_spawn_system(mut commands: Commands, mut player_state: ResMut<PlayerSt
                 radius: 3.,
                 ..default()
             })
+            .insert(Health::from_max(10.))
             .with_children(|parent| {
                 parent.spawn(Weapon { ..default() }).insert(ForPlayer);
             });

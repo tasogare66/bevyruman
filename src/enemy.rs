@@ -85,7 +85,7 @@ fn enemy_spawn_system(
                     ..default()
                 })
                 .insert(CollideCircle { ..default() })
-                .insert(Health(1.))
+                .insert(Health::from_max(1.))
                 .id();
 
             enemy_count.count += 1;
